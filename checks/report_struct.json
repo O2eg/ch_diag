@@ -1,0 +1,49 @@
+{
+	"header": "ClickHouse diagnostic report",
+	"description": "",
+	"sections": {
+		"system": {
+			"header": "Common system info",
+			"description": "Some description",
+			"state": "expanded",
+			"reports": {
+				"system_common": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Common cluster information",
+					"report_sql": "system_common.sql",
+					"footer": ""
+				},
+				"system_clusters": {
+					"state": "expanded",
+					"type": "table",
+					"header": "List of clusters",
+					"report_sql": "system_clusters.sql",
+					"footer": ""
+				},
+				"system_databases": {
+					"state": "expanded",
+					"type": "table",
+					"header": "List of databases",
+					"report_sql": "system_databases.sql",
+					"footer": ""
+				}
+			}
+		},
+		"queries": {
+			"header": "Common queries info",
+			"description": "Some description",
+			"state": "expanded",
+			"reports": {
+				"queries_top_long": {
+					"state": "expanded",
+					"type": "table",
+					"header": "Top long queries",
+					"report_sql": "queries_top_long.sql",
+					"footer": ""
+				}
+			}
+		}
+	}
+}
