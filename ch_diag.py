@@ -25,6 +25,29 @@ class SysConf:
         self.current_dir = os.path.dirname(os.path.realpath(__file__))
         self.args = args
 
+        if args.keyfile == '':
+            self.conn_params = {
+                "host": args.host,
+                "database": args.database,
+                "port": args.port,
+                "user": args.user,
+                "password": args.password
+            }
+        else:
+            self.conn_params = {
+                "host": args.host,
+                "database": args.database,
+                "port": args.port,
+                "user": args.user,
+                "password": args.password,
+                "ssl_version": 3,
+                "verify": True,
+                "ciphers": 'HIGH:-aNULL:-eNULL:-PSK:RC4-SHA:RC4-MD5',
+                "keyfile": args.keyfile,
+                "certfile": args.certfile,
+                "secure": True
+            }
+
 
 def worker_func(thread_name, conf, task_queue):
     print('================> Started %s' % thread_name)
@@ -34,7 +57,7 @@ def worker_func(thread_name, conf, task_queue):
     while do_work:
         try:
             task = None
-            with connect('clickhouse://default:ch-lab@127.0.0.1:9010/default?alt_hosts=127.0.0.1:9020') as conn:
+            with connect(**conf.conn_params) as conn:
                 while not task_queue.tasks.empty():
                     task = task_queue.tasks.get()
                     columns = None
@@ -66,14 +89,14 @@ def worker_func(thread_name, conf, task_queue):
 def build_report(conf, threads_num=1):
     task_queue = TaskQueue()
 
-    with open(os.path.join(conf.current_dir, 'checks', 'report_struct.json')) as f:
+    with open(os.path.join(conf.current_dir, 'sql', 'report_struct.json')) as f:
         data = f.read()
     report_struct = json.loads(data)
 
     databases = None
 
     if databases is None:
-        client = Client(host=conf.args.host, port=conf.args.port, user=conf.args.user, password=conf.args.password)
+        client = Client(**conf.conn_params)
         dbs = client.execute("""
             select
                 database
@@ -86,9 +109,13 @@ def build_report(conf, threads_num=1):
     for k, v in report_struct.items():
         if k == 'description':
             now = datetime.now()
-            report_struct['description'] = 'Collecting datetime: %s, ch_diag version: %s' % (
+
+            report_struct['description'] = '<b>Collecting datetime:</b> %s, <b>ch_diag version:</b> %s %s' % (
                 now.strftime("%d/%m/%Y %H:%M:%S"),
-                CH_DIAG_VERSION
+                CH_DIAG_VERSION,
+                "<br><br>" + "".join(
+                    [k + " = " + str(v) + "<br>" for k, v in conf.conn_params.items() if k not in ('user', 'password')]
+                ) if conf.args.add_params_to_report else ""
             )
         if k == 'sections':
             for section_k, section_v in v.items():
@@ -97,7 +124,7 @@ def build_report(conf, threads_num=1):
                         for report_i_k, report_i_v in report_v.items():
                             for report_ii_k, report_ii_v in report_i_v.items():
                                 if report_ii_k == 'report_sql':
-                                    with open(os.path.join(conf.current_dir, 'checks', report_ii_v)) as f:
+                                    with open(os.path.join(conf.current_dir, 'sql', report_ii_v)) as f:
                                         sql = f.read()
                                     sql = sql.replace('_CLUSTER_NAME', conf.args.cluster_name)
                                     sql = sql.replace('_DB_NAMES', databases)
@@ -166,6 +193,11 @@ if __name__ == "__main__":
         default=False
     )
     parser.add_argument(
+        "--add-params-to-report",
+        action='store_true',
+        default=False
+    )
+    parser.add_argument(
         "--host",
         type=str,
         default='127.0.0.1'
@@ -176,6 +208,11 @@ if __name__ == "__main__":
         default='9010'
     )
     parser.add_argument(
+        "--database",
+        type=str,
+        default='default'
+    )
+    parser.add_argument(
         "--user",
         type=str,
         default='default'
@@ -184,6 +221,16 @@ if __name__ == "__main__":
         "--password",
         type=str,
         default='default'
+    )
+    parser.add_argument(
+        "--keyfile",
+        type=str,
+        default=''
+    )
+    parser.add_argument(
+        "--certfile",
+        type=str,
+        default=''
     )
     parser.add_argument(
         "--cluster-name",
