@@ -89,6 +89,10 @@ def worker_func(thread_name, conf, task_queue):
 def build_report(conf, threads_num=1):
     task_queue = TaskQueue()
 
+    for v in ['output']:
+        if not os.path.exists(os.path.join(conf.current_dir, v)):
+            os.makedirs(os.path.join(conf.current_dir, v))
+
     with open(os.path.join(conf.current_dir, 'sql', 'report_struct.json')) as f:
         data = f.read()
     report_struct = json.loads(data)
