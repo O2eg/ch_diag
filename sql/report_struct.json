@@ -4,8 +4,8 @@
 	"sections": {
 		"system": {
 			"header": "Common system info",
-			"description": "Some description",
-			"state": "expanded",
+			"description": "Common info about current cluster",
+			"state": "collapsed",
 			"reports": {
 				"system_common": {
 					"state": "expanded",
@@ -18,6 +18,7 @@
 				"system_clusters": {
 					"state": "expanded",
 					"type": "table",
+					"description": "Contains full output of <b>system.clusters</b>",
 					"header": "List of clusters",
 					"report_sql": "system_clusters.sql",
 					"footer": ""
@@ -25,11 +26,89 @@
 				"system_databases": {
 					"state": "expanded",
 					"type": "table",
-					"header": "List of databases",
+					"description": "",
+					"header": "List of databases (based on <b>system.databases</b>)",
 					"report_sql": "system_databases.sql",
+					"footer": ""
+				},
+				"system_databases_ext": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Databases common stat (based on <b>system.tables</b>)",
+					"report_sql": "system_databases_ext.sql",
+					"footer": ""
+				},
+				"system_storage_policies": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "List of storage policies (based on <b>system.storage_policies</b>)",
+					"report_sql": "system_storage_policies.sql",
+					"footer": ""
+				},
+				"system_disks": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "List of disks (based on <b>system.disks</b>)",
+					"report_sql": "system_disks.sql",
 					"footer": ""
 				}
 			}
+		},
+		"errors": {
+			"header": "Errors in cluster",
+			"description": "",
+			"state": "expanded",
+			"reports": {
+				"errors_top": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Top errors in cluster (based on <b>system.errors</b>)",
+					"report_sql": "errors_top.sql",
+					"footer": ""
+				},
+				"errors_last": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Last errors in cluster (based on <b>system.errors</b>)",
+					"report_sql": "errors_last.sql",
+					"footer": ""
+				},
+				"errors_mutations": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Mutation erros (based on <b>system.mutations</b>)",
+					"report_sql": "errors_mutations.sql",
+					"footer": ""
+				},
+				"errors_stat": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Common erros (based on <b>system.metric_log</b>)",
+					"report_sql": "errors_stat.sql",
+					"footer": ""
+				},
+				"errors_queries": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Failed queries (based on <b>system.query_log</b>)",
+					"report_sql": "errors_queries.sql",
+					"footer": ""
+				}
+			}
+		},
+		"db_struct": {
+
+		},
+		"db_metrics": {
+
 		},
 		"queries": {
 			"header": "Common queries info",

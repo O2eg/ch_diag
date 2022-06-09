@@ -149,6 +149,8 @@ def build_report_for_cluster(conf, cluster_name, report_struct, threads_num=1):
             print('Live %s threads' % alive_count)
         live_iteration += 1
 
+    report_struct["header"] += " [%s]" % cluster_name
+
     for k, v in report_struct.items():
         if k == 'sections':
             for section_k, section_v in v.items():
