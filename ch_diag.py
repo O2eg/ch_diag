@@ -70,8 +70,7 @@ def worker_func(thread_name, conf, task_queue):
         except (
                 EOFError,
                 ConnectionAbortedError,
-                e1.NetworkError,
-                e2.OperationalError
+                e1.NetworkError
         ) as e:
             if task is not None:
                 task_queue.tasks.put(task)
@@ -81,22 +80,14 @@ def worker_func(thread_name, conf, task_queue):
             # if task is not None:
             #    tasks.put(task)
             print('Unhandled exception in %s: %s' % (thread_name, str(e)))
+            task_queue.tasks_result.append([task[0], [["Exception", "String"]], [[str(e)]]])
             time.sleep(1.0)
 
     print('================> Finished %s' % thread_name)
 
 
-def build_report(conf, threads_num=1):
+def build_report_for_cluster(conf, cluster_name, report_struct, threads_num=1):
     task_queue = TaskQueue()
-
-    for v in ['output']:
-        if not os.path.exists(os.path.join(conf.current_dir, v)):
-            os.makedirs(os.path.join(conf.current_dir, v))
-
-    with open(os.path.join(conf.current_dir, 'sql', 'report_struct.json')) as f:
-        data = f.read()
-    report_struct = json.loads(data)
-
     databases = None
 
     if databases is None:
@@ -106,7 +97,7 @@ def build_report(conf, threads_num=1):
                 database
             from clusterAllReplicas(%s, system.databases)
             where database not in ('INFORMATION_SCHEMA', 'information_schema')
-            group by database""" % conf.args.cluster_name
+            group by database""" % cluster_name
         )
         databases = ", ".join(['\'%s\'' % d[0] for d in dbs])
 
@@ -126,13 +117,13 @@ def build_report(conf, threads_num=1):
                 for report_k, report_v in section_v.items():
                     if report_k == 'reports':
                         for report_i_k, report_i_v in report_v.items():
-                            for report_ii_k, report_ii_v in report_i_v.items():
-                                if report_ii_k == 'report_sql':
-                                    with open(os.path.join(conf.current_dir, 'sql', report_ii_v)) as f:
+                            for report_item_k, report_item_v in report_i_v.items():
+                                if report_item_k == 'report_sql':
+                                    with open(os.path.join(conf.current_dir, 'sql', report_item_v)) as f:
                                         sql = f.read()
-                                    sql = sql.replace('_CLUSTER_NAME', conf.args.cluster_name)
+                                    sql = sql.replace('_CLUSTER_NAME', cluster_name)
                                     sql = sql.replace('_DB_NAMES', databases)
-                                    task_queue.tasks.put([report_ii_v, sql])
+                                    task_queue.tasks.put([report_item_v, sql])
 
     worker_threads = []
 
@@ -164,22 +155,69 @@ def build_report(conf, threads_num=1):
                 for report_k, report_v in section_v.items():
                     if report_k == 'reports':
                         for report_i_k, report_i_v in report_v.items():
-                            for report_ii_k, report_ii_v in list(report_i_v.items()):
-                                if report_ii_k == 'report_sql':
+                            for report_item_k, report_item_v in list(report_i_v.items()):
+                                if report_item_k == 'report_sql':
                                     # =========================================
                                     for tr in task_queue.tasks_result:
-                                        if tr[0] == report_ii_v:
+                                        if tr[0] == report_item_v:
                                             report_i_v["result"] = [tr[1], tr[2]]
                                             break
 
     report_result = json.dumps(report_struct, default=str, indent=4)
     with open(os.path.join(conf.current_dir, 'template', 'report.html'), 'r') as f:
         data = f.read()
-    with open(os.path.join(conf.current_dir, 'output', 'report.html'), 'w') as f:
+
+    if args.use_ts_in_output_file_name:
+        report_file_name = "report_" + cluster_name + "_" + str(datetime.now().timestamp()).split('.')[0] + ".html"
+    else:
+        report_file_name = "report_" + cluster_name + ".html"
+
+    output_file_name = os.path.join(conf.current_dir, 'output', report_file_name)
+    with open(output_file_name, 'w') as f:
         data = data.replace('_REPORT_DATA', report_result)
         f.write(data)
 
-    print("Report saved to " + os.path.join(conf.current_dir, 'output', 'report.html'))
+    print("Report saved to " + output_file_name)
+
+
+def build_reports(conf):
+
+    for v in ['output']:
+        if not os.path.exists(os.path.join(conf.current_dir, v)):
+            os.makedirs(os.path.join(conf.current_dir, v))
+
+    with open(os.path.join(conf.current_dir, 'sql', 'report_struct.json')) as f:
+        data = f.read()
+    report_struct = json.loads(data)
+
+    clusters = []
+    client = Client(**conf.conn_params)
+
+    if conf.args.cluster_name == 'AUTO':
+        clusters_res = client.execute(
+            """
+                select cluster, count(1) as cnt
+                from system.clusters
+                group by cluster
+                order by cnt desc
+                limit 1
+            """
+        )
+        clusters = [v[0] for v in clusters_res]
+    elif conf.args.cluster_name == 'ALL':
+        clusters_res = client.execute(
+            """
+                select cluster
+                from system.clusters
+                group by cluster
+            """
+        )
+        clusters = [v[0] for v in clusters_res]
+    else:
+        clusters.append(conf.args.cluster_name)
+
+    for cluster in clusters:
+        build_report_for_cluster(conf, cluster, report_struct, threads_num=1)
 
 
 if __name__ == "__main__":
@@ -239,7 +277,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--cluster-name",
         type=str,
-        default='test_cluster'
+        help="Select specific cluster or AUTO or ALL (default: %(default)s)",
+        default='AUTO'
+    )
+    parser.add_argument(
+        "--use-ts-in-output-file-name",
+        action='store_true',
+        default=False
     )
 
     args = parser.parse_args()
@@ -257,8 +301,4 @@ if __name__ == "__main__":
         print("Version %s" % CH_DIAG_VERSION)
         sys.exit(0)
 
-    build_report(SysConf(args), threads_num=1)
-
-
-
-
+    build_reports(SysConf(args))

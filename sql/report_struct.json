@@ -1,6 +1,6 @@
 {
 	"header": "ClickHouse diagnostic report",
-	"description": "",
+	"description": null,
 	"sections": {
 		"system": {
 			"header": "Common system info",
