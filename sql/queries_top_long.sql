@@ -1,7 +1,6 @@
 select
-	shardNum() as shard_num,
+	_shard_num,
 	hostName() as host_name,
-	fqdn() as fqdn,
 	current_database,
 	query_start_time,
 	query_duration_ms,

@@ -1,7 +1,6 @@
 select
-	shardNum() as shard_num,
+	_shard_num,
 	hostName() as host_name,
-	fqdn() as fqdn,
 	sum(ProfileEvent_FailedQuery) as FailedQuery,
 	sum(ProfileEvent_FailedSelectQuery) as FailedSelectQuery,
 	sum(ProfileEvent_FailedInsertQuery) as FailedInsertQuery,
@@ -12,5 +11,5 @@ select
 from clusterAllReplicas(_CLUSTER_NAME, system.metric_log)
 where
 	event_time > now() - interval 7 day
-group by shard_num, host_name, fqdn
-order by shard_num, host_name, fqdn, FailedQuery desc;
+group by _shard_num, host_name
+order by _shard_num, host_name, FailedQuery desc;

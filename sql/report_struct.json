@@ -5,14 +5,17 @@
 		"system": {
 			"header": "Common system info",
 			"description": "Common info about current cluster",
-			"state": "collapsed",
+			"state": "expanded",
 			"reports": {
 				"system_common": {
 					"state": "expanded",
 					"type": "table",
 					"description": "",
 					"header": "Common cluster information",
-					"report_sql": "system_common.sql",
+					"report_sql": [
+						["0.0", "21.10", "system_common_old.sql"],
+						["21.11", "+", "system_common_21_11.sql"]
+					],
 					"footer": ""
 				},
 				"system_clusters": {
@@ -53,6 +56,22 @@
 					"description": "",
 					"header": "List of disks (based on <b>system.disks</b>)",
 					"report_sql": "system_disks.sql",
+					"footer": ""
+				},
+				"system_settings": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Config parameters (based on <b>system.settings</b>)",
+					"report_sql": "system_settings.sql",
+					"footer": ""
+				},
+				"merge_tree_settings": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "MergeTree parameters (based on <b>system.merge_tree_settings</b>)",
+					"report_sql": "merge_tree_settings.sql",
 					"footer": ""
 				}
 			}

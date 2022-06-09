@@ -10,9 +10,10 @@ from clickhouse_driver.dbapi import errors as e2
 import json
 import os
 import argparse
+from pkg_resources import parse_version as version
 
 
-CH_DIAG_VERSION = '0.1'
+CH_DIAG_VERSION = '0.5'
 
 
 class TaskQueue:
@@ -24,8 +25,9 @@ class SysConf:
     def __init__(self, args):
         self.current_dir = os.path.dirname(os.path.realpath(__file__))
         self.args = args
+        self.cluster_version = None
 
-        if args.keyfile == '':
+        if args.certfile == '' and args.keyfile == '' and args.ca_certs == '':
             self.conn_params = {
                 "host": args.host,
                 "database": args.database,
@@ -33,18 +35,31 @@ class SysConf:
                 "user": args.user,
                 "password": args.password
             }
-        else:
+        if args.certfile != '' and args.keyfile != '':
             self.conn_params = {
                 "host": args.host,
                 "database": args.database,
                 "port": args.port,
                 "user": args.user,
                 "password": args.password,
-                "ssl_version": 3,
+                # "ssl_version": 3,
                 "verify": True,
-                "ciphers": 'HIGH:-aNULL:-eNULL:-PSK:RC4-SHA:RC4-MD5',
+                # "ciphers": 'HIGH:-aNULL:-eNULL:-PSK:RC4-SHA:RC4-MD5',
                 "keyfile": args.keyfile,
                 "certfile": args.certfile,
+                "secure": True
+            }
+        if args.ca_certs != '':
+            self.conn_params = {
+                "host": args.host,
+                "database": args.database,
+                "port": args.port,
+                "user": args.user,
+                "password": args.password,
+                # "ssl_version": 3,
+                "verify": False,
+                # "ciphers": 'HIGH:-aNULL:-eNULL:-PSK:RC4-SHA:RC4-MD5',
+                "ca_certs": args.ca_certs,
                 "secure": True
             }
 
@@ -86,6 +101,16 @@ def worker_func(thread_name, conf, task_queue):
     print('================> Finished %s' % thread_name)
 
 
+def get_specific_sql(cluster_version, items):
+    for item in items:
+        if item[1] == '+':
+            item[1] = '100'
+
+    for item in items:
+        if version(item[0]) <= cluster_version <= version(item[1]):
+            return item[2]
+
+
 def build_report_for_cluster(conf, cluster_name, report_struct, threads_num=1):
     task_queue = TaskQueue()
     databases = None
@@ -94,10 +119,10 @@ def build_report_for_cluster(conf, cluster_name, report_struct, threads_num=1):
         client = Client(**conf.conn_params)
         dbs = client.execute("""
             select
-                database
+                name
             from clusterAllReplicas(%s, system.databases)
-            where database not in ('INFORMATION_SCHEMA', 'information_schema')
-            group by database""" % cluster_name
+            where name not in ('INFORMATION_SCHEMA', 'information_schema')
+            group by name""" % cluster_name
         )
         databases = ", ".join(['\'%s\'' % d[0] for d in dbs])
 
@@ -119,8 +144,16 @@ def build_report_for_cluster(conf, cluster_name, report_struct, threads_num=1):
                         for report_i_k, report_i_v in report_v.items():
                             for report_item_k, report_item_v in report_i_v.items():
                                 if report_item_k == 'report_sql':
-                                    with open(os.path.join(conf.current_dir, 'sql', report_item_v)) as f:
-                                        sql = f.read()
+                                    if isinstance(report_item_v, list):
+                                        with open(os.path.join(
+                                                conf.current_dir,
+                                                'sql',
+                                                get_specific_sql(conf.cluster_version, report_item_v)
+                                        )) as f:
+                                            sql = f.read()
+                                    if isinstance(report_item_v, str):
+                                        with open(os.path.join(conf.current_dir, 'sql', report_item_v)) as f:
+                                            sql = f.read()
                                     sql = sql.replace('_CLUSTER_NAME', cluster_name)
                                     sql = sql.replace('_DB_NAMES', databases)
                                     task_queue.tasks.put([report_item_v, sql])
@@ -194,6 +227,8 @@ def build_reports(conf):
 
     clusters = []
     client = Client(**conf.conn_params)
+
+    conf.cluster_version = version(client.execute("select version()")[0][0])
 
     if conf.args.cluster_name == 'AUTO':
         clusters_res = client.execute(
@@ -273,6 +308,11 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--certfile",
+        type=str,
+        default=''
+    )
+    parser.add_argument(
+        "--ca-certs",
         type=str,
         default=''
     )

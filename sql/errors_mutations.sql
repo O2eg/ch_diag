@@ -1,7 +1,6 @@
 select
-	shardNum() as shard_num,
+	_shard_num,
 	hostName() as host_name,
-	fqdn() as fqdn,
 	database,
 	table,
 	mutation_id,
@@ -13,6 +12,6 @@ from clusterAllReplicas(_CLUSTER_NAME, system.mutations)
 where
 	is_done = 0 and
 	latest_fail_time > now() - interval 7 day
-group by shard_num, host_name, fqdn, database, table, mutation_id, command
-order by shard_num, host_name, fqdn, latest_fail_time_v desc
+group by _shard_num, host_name, database, table, mutation_id, command
+order by _shard_num, host_name, latest_fail_time_v desc
 limit 100;
