@@ -13,7 +13,7 @@ import argparse
 from pkg_resources import parse_version as version
 
 
-CH_DIAG_VERSION = '0.5'
+CH_DIAG_VERSION = '0.7'
 
 
 class TaskQueue:
@@ -92,11 +92,8 @@ def worker_func(thread_name, conf, task_queue):
             print('%s: %s' % (thread_name, str(e)))
             time.sleep(1.0)
         except Exception as e:
-            # if task is not None:
-            #    tasks.put(task)
-            print('Unhandled exception in %s: %s' % (thread_name, str(e)))
+            print('Unhandled exception in %s, %s: %s' % (thread_name, task[0], str(e)))
             task_queue.tasks_result.append([task[0], [["Exception", "String"]], [[str(e)]]])
-            time.sleep(1.0)
 
     print('================> Finished %s' % thread_name)
 
@@ -107,7 +104,7 @@ def get_specific_sql(cluster_version, items):
             item[1] = '100'
 
     for item in items:
-        if version(item[0]) <= cluster_version <= version(item[1]):
+        if version(item[0]) <= cluster_version < version(item[1]):
             return item[2]
 
 
@@ -144,16 +141,14 @@ def build_report_for_cluster(conf, cluster_name, report_struct, threads_num=1):
                         for report_i_k, report_i_v in report_v.items():
                             for report_item_k, report_item_v in report_i_v.items():
                                 if report_item_k == 'report_sql':
+                                    sql_file = None
                                     if isinstance(report_item_v, list):
-                                        with open(os.path.join(
-                                                conf.current_dir,
-                                                'sql',
-                                                get_specific_sql(conf.cluster_version, report_item_v)
-                                        )) as f:
-                                            sql = f.read()
+                                        sql_file = get_specific_sql(conf.cluster_version, report_item_v)
                                     if isinstance(report_item_v, str):
-                                        with open(os.path.join(conf.current_dir, 'sql', report_item_v)) as f:
-                                            sql = f.read()
+                                        sql_file = report_item_v
+
+                                    with open(os.path.join(conf.current_dir, 'sql', section_k, sql_file)) as f:
+                                        sql = f.read()
                                     sql = sql.replace('_CLUSTER_NAME', cluster_name)
                                     sql = sql.replace('_DB_NAMES', databases)
                                     task_queue.tasks.put([report_item_v, sql])

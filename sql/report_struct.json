@@ -13,7 +13,8 @@
 					"description": "",
 					"header": "Common cluster information",
 					"report_sql": [
-						["0.0", "21.10", "system_common_old.sql"],
+						["0.0", "21.11", "system_common_old.sql"],
+						["0.0", "20.11", "system_common_20_11.sql"],
 						["21.11", "+", "system_common_21_11.sql"]
 					],
 					"footer": ""
@@ -24,6 +25,14 @@
 					"description": "Contains full output of <b>system.clusters</b>",
 					"header": "List of clusters",
 					"report_sql": "system_clusters.sql",
+					"footer": ""
+				},
+				"system_macros": {
+					"state": "expanded",
+					"type": "table",
+					"description": "Contains full output of <b>system.macros</b>",
+					"header": "List of macros (based on <b>system.macros</b>)",
+					"report_sql": "system_macros.sql",
 					"footer": ""
 				},
 				"system_databases": {
@@ -66,12 +75,20 @@
 					"report_sql": "system_settings.sql",
 					"footer": ""
 				},
-				"merge_tree_settings": {
+				"system_merge_tree_settings": {
 					"state": "expanded",
 					"type": "table",
 					"description": "",
 					"header": "MergeTree parameters (based on <b>system.merge_tree_settings</b>)",
-					"report_sql": "merge_tree_settings.sql",
+					"report_sql": "system_merge_tree_settings.sql",
+					"footer": ""
+				},
+				"system_events": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Events in cluster (based on <b>system.events</b>)",
+					"report_sql": "system_events.sql",
 					"footer": ""
 				}
 			}
@@ -85,7 +102,7 @@
 					"state": "expanded",
 					"type": "table",
 					"description": "",
-					"header": "Top errors in cluster (based on <b>system.errors</b>)",
+					"header": "Top 20 errors in cluster (based on <b>system.errors</b>)",
 					"report_sql": "errors_top.sql",
 					"footer": ""
 				},
@@ -93,7 +110,7 @@
 					"state": "expanded",
 					"type": "table",
 					"description": "",
-					"header": "Last errors in cluster (based on <b>system.errors</b>)",
+					"header": "Last 20 errors in cluster (based on <b>system.errors</b>)",
 					"report_sql": "errors_last.sql",
 					"footer": ""
 				},
@@ -120,25 +137,369 @@
 					"header": "Failed queries (based on <b>system.query_log</b>)",
 					"report_sql": "errors_queries.sql",
 					"footer": ""
+				},
+				"errors_dictionaries": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Failed dictionaries (based on <b>system.dictionaries</b>)",
+					"report_sql": "errors_dictionaries.sql",
+					"footer": ""
+				},
+				"errors_distribution_queue": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Errors in distributed tables (based on <b>system.distribution_queue</b>)",
+					"report_sql": "errors_distribution_queue.sql",
+					"footer": ""
+				},
+				"errors_replicas": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Replication errors (based on <b>system.replicas</b>)",
+					"report_sql": [
+						["0.0", "21.9", "errors_replicas_old.sql"],
+						["21.9", "+", "errors_replicas_21_9.sql"]
+					],
+					"footer": ""
+				},
+				"errors_replication_queue": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Replication queue errors (based on <b>system.replication_queue</b>)",
+					"report_sql": "errors_replication_queue.sql",
+					"footer": ""
+				},
+				"errors_distributed_ddl_queue": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Distributed DDL queue errors (based on <b>system.distributed_ddl_queue</b>)",
+					"report_sql": [
+						["0.0", "21.11", "errors_distributed_ddl_queue_old.sql"],
+						["21.11", "+", "errors_distributed_ddl_queue_21_11.sql"]
+					],
+					"footer": ""
+				},
+				"errors_keeper": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Keeper errors (based on <b>system.metric_log</b>)",
+					"report_sql": "errors_keeper.sql",
+					"footer": ""
 				}
 			}
 		},
-		"db_struct": {
-
+		"db": {
+			"header": "Database structure",
+			"description": "",
+			"state": "expanded",
+			"reports": {
+				"db_dictionaries": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "All dictionaries stat (based on <b>system.dictionaries</b>)",
+					"report_sql": "db_dictionaries.sql",
+					"footer": ""
+				},
+				"db_distr_by_hosts": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Distribution of databases across cluster hosts",
+					"report_sql": "db_distr_by_hosts.sql",
+					"footer": ""
+				},
+				"db_distr_engines_by_hosts": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Distribution of table engines across databases and across cluster hosts",
+					"report_sql": "db_distr_engines_by_hosts.sql",
+					"footer": ""
+				},
+				"db_stats": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Databases stat",
+					"report_sql": "db_stats.sql",
+					"footer": ""
+				},
+				"db_tbl_engines_stat": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Table engines stat",
+					"report_sql": "db_tbl_engines_stat.sql",
+					"footer": ""
+				},
+				"db_distr_tbl_engines": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Distribution of table engines by databases",
+					"report_sql": "db_distr_tbl_engines.sql",
+					"footer": ""
+				},
+				"db_distr_tbl_engines_by_hosts": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Distribution of tables across cluster hosts",
+					"report_sql": "db_distr_tbl_engines_by_hosts.sql",
+					"footer": ""
+				},
+				"db_top_tables": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Top tables by size (with full DDL)",
+					"report_sql": "db_top_tables.sql",
+					"footer": ""
+				},
+				"db_data_skipping_indices": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Data skipping indices stat",
+					"report_sql": [
+						["0.0", "21.11", "db_data_skipping_indices_old.sql"],
+						["21.11", "+", "db_data_skipping_indices_21_11.sql"]
+					],
+					"footer": ""
+				},
+				"db_asymmetric_tbls": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Tables that are not on all nodes included in the cluster",
+					"report_sql": "db_asymmetric_tbls.sql",
+					"footer": ""
+				},
+				"db_symmetric_tbls": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Tables that are on all nodes included in the cluster",
+					"report_sql": "db_symmetric_tbls.sql",
+					"footer": ""
+				},
+				"db_tbls_with_diff_ddls": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Tables with the same name, but with different DDLs",
+					"report_sql": "db_tbls_with_diff_ddls.sql",
+					"footer": ""
+				},
+				"db_detached_parts": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Detached parts and reasons",
+					"report_sql": "db_detached_parts.sql",
+					"footer": ""
+				},
+				"db_parts_stat": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Dataparts statistics",
+					"report_sql": "db_parts_stat.sql",
+					"footer": ""
+				}
+			}
 		},
-		"db_metrics": {
-
+		"replication": {
+			"header": "Replication diagnostic",
+			"description": "",
+			"state": "expanded",
+			"reports": {
+				"repl_queue": {
+					"state": "expanded",
+					"type": "table",
+					"description": "Tasks from replication queues stored in Clickhouse Keeper or ZooKeeper, for tables in the ReplicatedMergeTree family",
+					"header": "Replication queue (based on <b>system.replication_queue</b>)",
+					"report_sql": "repl_queue.sql",
+					"footer": ""
+				},
+				"repl_fetches": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Currently running background fetches (based on <b>system.replicated_fetches</b>)",
+					"report_sql": "repl_fetches.sql",
+					"footer": ""
+				},
+				"repl_tables": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Status of replicated tables (based on <b>system.replicas</b>)",
+					"report_sql": [
+						["0.0", "21.10", "repl_tables_old.sql"],
+						["21.10", "+", "repl_tables_21_10.sql"]
+					],
+					"footer": ""
+				}
+			}
+		},
+		"processes": {
+			"header": "Processes and backgroud process (mutations, merges)",
+			"description": "",
+			"state": "expanded",
+			"reports": {
+				"proc_current": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Current processes (based on <b>system.processes</b>)",
+					"report_sql": [
+						["0.0", "21.9", "proc_current_old.sql"],
+						["21.9", "+", "proc_current_21_9.sql"]
+					],
+					"footer": ""
+				},
+				"proc_current_merges": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Current merges (based on <b>system.merges</b>)",
+					"report_sql": "proc_current_merges.sql",
+					"footer": ""
+				},
+				"proc_current_mutations": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Current mutations (based on <b>system.mutations</b>)",
+					"report_sql": "proc_current_mutations.sql",
+					"footer": ""
+				},
+				"proc_distribution_queue": {
+					"state": "expanded",
+					"type": "table",
+					"description": "These local files contain new parts that are created by inserting new data into the Distributed table in asynchronous mode",
+					"header": "Local files that are in the queue to be sent to the shards (based on <b>system.distribution_queue</b>)",
+					"report_sql": "proc_distribution_queue.sql",
+					"footer": ""
+				}
+			}
+		},
+		"workload": {
+			"header": "Workload diagnostic",
+			"description": "",
+			"state": "expanded",
+			"reports": {
+				"workload_pools_avg": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Pools utilization [<b>avg</b> by last week] (based on <b>system.metric_log</b>)",
+					"report_sql": [
+						["0.0", "21.11", "workload_pools_avg_old.sql"],
+						["21.11", "+", "workload_pools_avg_21_11.sql"]
+					],
+					"footer": ""
+				},
+				"workload_pools_max": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Pools utilization [<b>max</b> by last week] (based on <b>system.metric_log</b>)",
+					"report_sql": [
+						["0.0", "21.11", "workload_pools_max_old.sql"],
+						["21.11", "+", "workload_pools_max_21_11.sql"]
+					],
+					"footer": ""
+				},
+				"workload_system_metrics": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "System metrics [<b>avg</b> and <b>max</b> by last 3 days] (based on <b>system.asynchronous_metric_log</b>)",
+					"report_sql": "workload_system_metrics.sql",
+					"footer": ""
+				},
+				"workload_database_metrics": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Database metrics [by last 3 days] (based on <b>system.metric_log</b>)",
+					"report_sql": [
+						["0.0", "22.2", "workload_database_metrics_old.sql"],
+						["22.2", "+", "workload_database_metrics_22_2.sql"]
+					],
+					"footer": ""
+				},
+				"workload_distr_tbls_metrics": {
+					"state": "expanded",
+					"type": "table",
+					"description": "",
+					"header": "Distributed tables metrics [by last 3 days] (based on <b>system.metric_log</b>)",
+					"report_sql": "workload_distr_tbls_metrics.sql",
+					"footer": ""
+				}
+			}
 		},
 		"queries": {
-			"header": "Common queries info",
+			"header": "Queries diagnostic (based on <b>system.query_log</b>)",
 			"description": "Some description",
 			"state": "expanded",
 			"reports": {
+				"queries_by_hosts_common": {
+					"state": "expanded",
+					"type": "table",
+					"header": "Common queries stat by hosts",
+					"report_sql": "queries_by_hosts_common.sql",
+					"footer": ""
+				},
 				"queries_top_long": {
 					"state": "expanded",
 					"type": "table",
 					"header": "Top long queries",
 					"report_sql": "queries_top_long.sql",
+					"footer": ""
+				},
+				"queries_top_long_agg": {
+					"state": "expanded",
+					"type": "table",
+					"header": "Top long queries aggregated by <b>normalized_query_hash</b>",
+					"report_sql": "queries_top_long_agg.sql",
+					"footer": ""
+				},
+				"queries_top_result_bytes": {
+					"state": "expanded",
+					"type": "table",
+					"header": "Top queries by result bytes",
+					"report_sql": "queries_top_result_bytes.sql",
+					"footer": ""
+				},
+				"queries_top_result_bytes_agg": {
+					"state": "expanded",
+					"type": "table",
+					"header": "Top queries by result bytes aggregated by <b>normalized_query_hash</b>",
+					"report_sql": "queries_top_result_bytes_agg.sql",
+					"footer": ""
+				},
+				"queries_top_mem": {
+					"state": "expanded",
+					"type": "table",
+					"header": "Top long queries",
+					"report_sql": "queries_top_mem.sql",
+					"footer": ""
+				},
+				"queries_top_mem_agg": {
+					"state": "expanded",
+					"type": "table",
+					"header": "Top long queries aggregated by <b>normalized_query_hash</b>",
+					"report_sql": "queries_top_mem_agg.sql",
 					"footer": ""
 				}
 			}
