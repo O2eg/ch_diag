@@ -17,7 +17,7 @@ SELECT
 	log_pointer,
     total_replicas,
     active_replicas,
-    replica_is_active,
+    toString(replica_is_active) as replica_is_active,
     last_queue_update_exception,
     zookeeper_exception
 from clusterAllReplicas(_CLUSTER_NAME, system.replicas)
