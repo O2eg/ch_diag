@@ -13,8 +13,8 @@
 					"description": "",
 					"header": "Common cluster information",
 					"report_sql": [
-						["0.0", "21.11", "system_common_old.sql"],
-						["0.0", "20.11", "system_common_20_11.sql"],
+						["0.0", "20.11", "system_common_old.sql"],
+						["20.11", "21.11", "system_common_20_11.sql"],
 						["21.11", "+", "system_common_21_11.sql"]
 					],
 					"footer": ""
