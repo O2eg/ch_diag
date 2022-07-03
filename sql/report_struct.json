@@ -571,7 +571,7 @@
 						["0.0", "20.4", "queries_top_long_agg_old.sql"],
 						["20.4", "20.7", "queries_top_long_agg_20_4.sql"],
 						["20.7", "21.1", "queries_top_long_agg_20_7.sql"],
-						["21.1", "+", "queries_top_long_21_1.sql"]
+						["21.1", "+", "queries_top_long_agg_21_1.sql"]
 					],
 					"footer": ""
 				},
@@ -603,8 +603,8 @@
 					"type": "table",
 					"header": "Top queries by memory usage",
 					"report_sql": [
-						["0.0", "20.4", "queries_top_mem_old.sql"],
-						["20.4", "+", "queries_top_mem_20_4.sql"]
+						["0.0", "20.7", "queries_top_mem_old.sql"],
+						["20.7", "+", "queries_top_mem_20_7.sql"]
 					],
 					"footer": ""
 				},
