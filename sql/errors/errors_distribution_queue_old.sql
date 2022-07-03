@@ -1,0 +1,1 @@
+select 'system.distribution_queue is supported since 20.5' as Warning

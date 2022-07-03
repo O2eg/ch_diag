@@ -48,7 +48,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Databases common stat (based on <b>system.tables</b>)",
-					"report_sql": "system_databases_ext.sql",
+					"report_sql": [
+						["0.0", "20.11", "system_databases_ext_old.sql"],
+						["20.11", "+", "system_databases_ext_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"system_storage_policies": {
@@ -56,7 +59,10 @@
 					"type": "table",
 					"description": "",
 					"header": "List of storage policies (based on <b>system.storage_policies</b>)",
-					"report_sql": "system_storage_policies.sql",
+					"report_sql": [
+						["0.0", "20.11", "system_storage_policies_old.sql"],
+						["20.11", "+", "system_storage_policies_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"system_disks": {
@@ -64,7 +70,10 @@
 					"type": "table",
 					"description": "",
 					"header": "List of disks (based on <b>system.disks</b>)",
-					"report_sql": "system_disks.sql",
+					"report_sql": [
+						["0.0", "20.11", "system_disks_old.sql"],
+						["20.11", "+", "system_disks_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"system_settings": {
@@ -88,7 +97,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Events in cluster (based on <b>system.events</b>)",
-					"report_sql": "system_events.sql",
+					"report_sql": [
+						["0.0", "21.1", "system_events_old.sql"],
+						["21.1", "+", "system_events_21_1.sql"]
+					],
 					"footer": ""
 				}
 			}
@@ -103,7 +115,11 @@
 					"type": "table",
 					"description": "",
 					"header": "Top 20 errors in cluster (based on <b>system.errors</b>)",
-					"report_sql": "errors_top.sql",
+					"report_sql": [
+						["0.0", "20.11", "errors_top_old.sql"],
+						["20.11", "21.4", "errors_top_20_11.sql"],
+						["21.4", "+", "errors_top_21_4.sql"]
+					],
 					"footer": ""
 				},
 				"errors_last": {
@@ -111,7 +127,11 @@
 					"type": "table",
 					"description": "",
 					"header": "Last 20 errors in cluster (based on <b>system.errors</b>)",
-					"report_sql": "errors_last.sql",
+					"report_sql": [
+						["0.0", "20.11", "errors_last_old.sql"],
+						["20.11", "21.4", "errors_last_20_11.sql"],
+						["21.4", "+", "errors_last_21_4.sql"]
+					],
 					"footer": ""
 				},
 				"errors_mutations": {
@@ -127,7 +147,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Common erros (based on <b>system.metric_log</b>)",
-					"report_sql": "errors_stat.sql",
+					"report_sql": [
+						["0.0", "20.5", "errors_stat_old.sql"],
+						["20.5", "+", "errors_stat_20_5.sql"]
+					],
 					"footer": ""
 				},
 				"errors_queries": {
@@ -135,7 +158,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Failed queries (based on <b>system.query_log</b>)",
-					"report_sql": "errors_queries.sql",
+					"report_sql": [
+						["0.0", "21.1", "errors_queries_old.sql"],
+						["21.1", "+", "errors_queries_21_1.sql"]
+					],
 					"footer": ""
 				},
 				"errors_dictionaries": {
@@ -152,6 +178,10 @@
 					"description": "",
 					"header": "Errors in distributed tables (based on <b>system.distribution_queue</b>)",
 					"report_sql": "errors_distribution_queue.sql",
+					"report_sql": [
+						["0.0", "20.5", "errors_distribution_queue_old.sql"],
+						["20.5", "+", "errors_distribution_queue_20_5.sql"]
+					],
 					"footer": ""
 				},
 				"errors_replicas": {
@@ -179,8 +209,8 @@
 					"description": "",
 					"header": "Distributed DDL queue errors (based on <b>system.distributed_ddl_queue</b>)",
 					"report_sql": [
-						["0.0", "21.11", "errors_distributed_ddl_queue_old.sql"],
-						["21.11", "+", "errors_distributed_ddl_queue_21_11.sql"]
+						["0.0", "21.2", "errors_distributed_ddl_queue_old.sql"],
+						["21.2", "+", "errors_distributed_ddl_queue_21_2.sql"]
 					],
 					"footer": ""
 				},
@@ -189,7 +219,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Keeper errors (based on <b>system.metric_log</b>)",
-					"report_sql": "errors_keeper.sql",
+					"report_sql": [
+						["0.0", "21.11", "errors_keeper_old.sql"],
+						["21.11", "+", "errors_keeper_20_11.sql"]
+					],
 					"footer": ""
 				}
 			}
@@ -204,7 +237,10 @@
 					"type": "table",
 					"description": "",
 					"header": "All dictionaries stat (based on <b>system.dictionaries</b>)",
-					"report_sql": "db_dictionaries.sql",
+					"report_sql": [
+						["0.0", "21.6", "db_dictionaries_old.sql"],
+						["21.6", "+", "db_dictionaries_21_6.sql"]
+					],
 					"footer": ""
 				},
 				"db_distr_by_hosts": {
@@ -212,7 +248,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Distribution of databases across cluster hosts",
-					"report_sql": "db_distr_by_hosts.sql",
+					"report_sql": [
+						["0.0", "20.11", "db_distr_by_hosts_old.sql"],
+						["20.11", "+", "db_distr_by_hosts_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"db_distr_engines_by_hosts": {
@@ -220,23 +259,32 @@
 					"type": "table",
 					"description": "",
 					"header": "Distribution of table engines across databases and across cluster hosts",
-					"report_sql": "db_distr_engines_by_hosts.sql",
+					"report_sql": [
+						["0.0", "20.11", "db_distr_engines_by_hosts_old.sql"],
+						["20.11", "+", "db_distr_engines_by_hosts_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"db_stats": {
 					"state": "expanded",
 					"type": "table",
 					"description": "",
-					"header": "Databases stat",
-					"report_sql": "db_stats.sql",
+					"header": "Databases stat (based on <b>system.tables</b>)",
+					"report_sql": [
+						["0.0", "20.11", "db_stats_old.sql"],
+						["20.11", "+", "db_stats_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"db_tbl_engines_stat": {
 					"state": "expanded",
 					"type": "table",
 					"description": "",
-					"header": "Table engines stat",
-					"report_sql": "db_tbl_engines_stat.sql",
+					"header": "Table engines stat (based on <b>system.tables</b>)",
+					"report_sql": [
+						["0.0", "20.11", "db_tbl_engines_stat_old.sql"],
+						["20.11", "+", "db_tbl_engines_stat_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"db_distr_tbl_engines": {
@@ -244,7 +292,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Distribution of table engines by databases",
-					"report_sql": "db_distr_tbl_engines.sql",
+					"report_sql": [
+						["0.0", "20.11", "db_distr_tbl_engines_old.sql"],
+						["20.11", "+", "db_distr_tbl_engines_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"db_distr_tbl_engines_by_hosts": {
@@ -252,7 +303,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Distribution of tables across cluster hosts",
-					"report_sql": "db_distr_tbl_engines_by_hosts.sql",
+					"report_sql": [
+						["0.0", "20.11", "db_distr_tbl_engines_by_hosts_old.sql"],
+						["20.11", "+", "db_distr_tbl_engines_by_hosts_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"db_top_tables": {
@@ -260,7 +314,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Top tables by size (with full DDL)",
-					"report_sql": "db_top_tables.sql",
+					"report_sql": [
+						["0.0", "20.11", "db_top_tables_old.sql"],
+						["20.11", "+", "db_top_tables_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"db_data_skipping_indices": {
@@ -269,7 +326,8 @@
 					"description": "",
 					"header": "Data skipping indices stat",
 					"report_sql": [
-						["0.0", "21.11", "db_data_skipping_indices_old.sql"],
+						["0.0", "21.8", "db_data_skipping_indices_old.sql"],
+						["21.8", "21.11", "db_data_skipping_indices_21_8.sql"],
 						["21.11", "+", "db_data_skipping_indices_21_11.sql"]
 					],
 					"footer": ""
@@ -279,7 +337,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Tables that are not on all nodes included in the cluster",
-					"report_sql": "db_asymmetric_tbls.sql",
+					"report_sql": [
+						["0.0", "20.11", "db_asymmetric_tbls_old.sql"],
+						["20.11", "+", "db_asymmetric_tbls_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"db_symmetric_tbls": {
@@ -287,7 +348,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Tables that are on all nodes included in the cluster",
-					"report_sql": "db_symmetric_tbls.sql",
+					"report_sql": [
+						["0.0", "20.11", "db_symmetric_tbls_old.sql"],
+						["20.11", "+", "db_symmetric_tbls_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"db_tbls_with_diff_ddls": {
@@ -303,7 +367,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Detached parts and reasons",
-					"report_sql": "db_detached_parts.sql",
+					"report_sql": [
+						["0.0", "20.11", "db_detached_parts_old.sql"],
+						["20.11", "+", "db_detached_parts_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"db_parts_stat": {
@@ -312,6 +379,10 @@
 					"description": "",
 					"header": "Dataparts statistics",
 					"report_sql": "db_parts_stat.sql",
+					"report_sql": [
+						["0.0", "20.11", "db_parts_stat_old.sql"],
+						["20.11", "+", "db_parts_stat_20_11.sql"]
+					],
 					"footer": ""
 				}
 			}
@@ -334,7 +405,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Currently running background fetches (based on <b>system.replicated_fetches</b>)",
-					"report_sql": "repl_fetches.sql",
+					"report_sql": [
+						["0.0", "20.11", "repl_fetches_old.sql"],
+						["20.11", "+", "repl_fetches_20_11.sql"]
+					],
 					"footer": ""
 				},
 				"repl_tables": {
@@ -371,7 +445,10 @@
 					"type": "table",
 					"description": "",
 					"header": "Current merges (based on <b>system.merges</b>)",
-					"report_sql": "proc_current_merges.sql",
+					"report_sql": [
+						["0.0", "20.10", "proc_current_merges_old.sql"],
+						["20.10", "+", "proc_current_merges_20_10.sql"]
+					],
 					"footer": ""
 				},
 				"proc_current_mutations": {
@@ -387,7 +464,10 @@
 					"type": "table",
 					"description": "These local files contain new parts that are created by inserting new data into the Distributed table in asynchronous mode",
 					"header": "Local files that are in the queue to be sent to the shards (based on <b>system.distribution_queue</b>)",
-					"report_sql": "proc_distribution_queue.sql",
+					"report_sql": [
+						["0.0", "20.5", "proc_distribution_queue_old.sql"],
+						["20.5", "+", "proc_distribution_queue_20_5.sql"]
+					],
 					"footer": ""
 				}
 			}
@@ -403,7 +483,8 @@
 					"description": "",
 					"header": "Pools utilization [<b>avg</b> by last week] (based on <b>system.metric_log</b>)",
 					"report_sql": [
-						["0.0", "21.11", "workload_pools_avg_old.sql"],
+						["0.0", "20.4", "workload_pools_avg_old.sql"],
+						["20.4", "21.11", "workload_pools_avg_20_4.sql"],
 						["21.11", "+", "workload_pools_avg_21_11.sql"]
 					],
 					"footer": ""
@@ -414,7 +495,8 @@
 					"description": "",
 					"header": "Pools utilization [<b>max</b> by last week] (based on <b>system.metric_log</b>)",
 					"report_sql": [
-						["0.0", "21.11", "workload_pools_max_old.sql"],
+						["0.0", "20.4", "workload_pools_max_old.sql"],
+						["20.4", "21.11", "workload_pools_max_20_4.sql"],
 						["21.11", "+", "workload_pools_max_21_11.sql"]
 					],
 					"footer": ""
@@ -424,7 +506,10 @@
 					"type": "table",
 					"description": "",
 					"header": "System metrics [<b>avg</b> and <b>max</b> by last 3 days] (based on <b>system.asynchronous_metric_log</b>)",
-					"report_sql": "workload_system_metrics.sql",
+					"report_sql": [
+						["0.0", "20.5", "workload_system_metrics_old.sql"],
+						["20.5", "+", "workload_system_metrics_20_5.sql"]
+					],
 					"footer": ""
 				},
 				"workload_database_metrics": {
@@ -433,7 +518,8 @@
 					"description": "",
 					"header": "Database metrics [by last 3 days] (based on <b>system.metric_log</b>)",
 					"report_sql": [
-						["0.0", "22.2", "workload_database_metrics_old.sql"],
+						["0.0", "20.4", "workload_database_metrics_old.sql"],
+						["20.4", "22.2", "workload_database_metrics_20_4.sql"],
 						["22.2", "+", "workload_database_metrics_22_2.sql"]
 					],
 					"footer": ""
@@ -443,7 +529,11 @@
 					"type": "table",
 					"description": "",
 					"header": "Distributed tables metrics [by last 3 days] (based on <b>system.metric_log</b>)",
-					"report_sql": "workload_distr_tbls_metrics.sql",
+					"report_sql": [
+						["0.0", "20.4", "workload_distr_tbls_metrics_old.sql"],
+						["20.4", "21.3", "workload_distr_tbls_metrics_20_4.sql"],
+						["21.3", "+", "workload_distr_tbls_metrics_21_3.sql"]
+					],
 					"footer": ""
 				}
 			}
@@ -457,21 +547,32 @@
 					"state": "expanded",
 					"type": "table",
 					"header": "Common queries stat by hosts",
-					"report_sql": "queries_by_hosts_common.sql",
+					"report_sql": [
+						["0.0", "20.7", "queries_by_hosts_common_old.sql"],
+						["20.7", "+", "queries_by_hosts_common_20_7.sql"]
+					],
 					"footer": ""
 				},
 				"queries_top_long": {
 					"state": "expanded",
 					"type": "table",
 					"header": "Top long queries",
-					"report_sql": "queries_top_long.sql",
+					"report_sql": [
+						["0.0", "20.7", "queries_top_long_old.sql"],
+						["20.7", "+", "queries_top_long_20_7.sql"]
+					],
 					"footer": ""
 				},
 				"queries_top_long_agg": {
 					"state": "expanded",
 					"type": "table",
 					"header": "Top long queries aggregated by <b>normalized_query_hash</b>",
-					"report_sql": "queries_top_long_agg.sql",
+					"report_sql": [
+						["0.0", "20.4", "queries_top_long_agg_old.sql"],
+						["20.4", "20.7", "queries_top_long_agg_20_4.sql"],
+						["20.7", "21.1", "queries_top_long_agg_20_7.sql"],
+						["21.1", "+", "queries_top_long_21_1.sql"]
+					],
 					"footer": ""
 				},
 				"queries_top_result_bytes": {
@@ -479,27 +580,44 @@
 					"type": "table",
 					"header": "Top queries by result bytes",
 					"report_sql": "queries_top_result_bytes.sql",
+					"report_sql": [
+						["0.0", "20.7", "queries_top_result_bytes_old.sql"],
+						["20.7", "+", "queries_top_result_bytes_20_7.sql"]
+					],
 					"footer": ""
 				},
 				"queries_top_result_bytes_agg": {
 					"state": "expanded",
 					"type": "table",
 					"header": "Top queries by result bytes aggregated by <b>normalized_query_hash</b>",
-					"report_sql": "queries_top_result_bytes_agg.sql",
+					"report_sql": [
+						["0.0", "20.4", "queries_top_result_bytes_agg_old.sql"],
+						["20.4", "20.7", "queries_top_result_bytes_agg_20_4.sql"],
+						["20.7", "21.1", "queries_top_result_bytes_agg_20_7.sql"],
+						["21.1", "+", "queries_top_result_bytes_agg_21_1.sql"]
+					],
 					"footer": ""
 				},
 				"queries_top_mem": {
 					"state": "expanded",
 					"type": "table",
-					"header": "Top long queries",
-					"report_sql": "queries_top_mem.sql",
+					"header": "Top queries by memory usage",
+					"report_sql": [
+						["0.0", "20.4", "queries_top_mem_old.sql"],
+						["20.4", "+", "queries_top_mem_20_4.sql"]
+					],
 					"footer": ""
 				},
 				"queries_top_mem_agg": {
 					"state": "expanded",
 					"type": "table",
-					"header": "Top long queries aggregated by <b>normalized_query_hash</b>",
-					"report_sql": "queries_top_mem_agg.sql",
+					"header": "Top queries by memory usage aggregated by <b>normalized_query_hash</b>",
+					"report_sql": [
+						["0.0", "20.4", "queries_top_mem_agg_old.sql"],
+						["20.4", "20.7", "queries_top_mem_agg_20_4.sql"],
+						["20.7", "21.1", "queries_top_mem_agg_20_7.sql"],
+						["21.1", "+", "queries_top_mem_agg_21_1.sql"]
+					],
 					"footer": ""
 				}
 			}

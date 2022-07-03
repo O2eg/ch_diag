@@ -1,4 +1,3 @@
--- subquery to avoid "Cannot find column _shard_num in source stream"
 select
 	m._shard_num, 
 	m.host_name,
@@ -16,7 +15,7 @@ from (
 	join (
 		select
 			_shard_num,
-			host_name,
+			hostName() as host_name,
 			array(
 				tuple(
 					'Query',
@@ -127,31 +126,8 @@ from (
 					toUInt64(max(CurrentMetric_ZooKeeperSession))
 				)
 			) as v
-		from (
-			select
-				_shard_num,
-				hostName() as host_name,
-				ProfileEvent_Query,
-				ProfileEvent_SelectQuery,
-				ProfileEvent_InsertQuery,
-				ProfileEvent_InsertedRows,
-				ProfileEvent_InsertedBytes,
-				ProfileEvent_DelayedInserts,
-				ProfileEvent_RejectedInserts,
-				ProfileEvent_Merge,
-				CurrentMetric_DiskSpaceReservedForMerge,
-				ProfileEvent_MergedRows,
-				ProfileEvent_ReplicatedPartMerges,
-				ProfileEvent_ReplicatedPartFetchesOfMerged,
-				ProfileEvent_ExternalSortMerge,
-				ProfileEvent_ArenaAllocBytes,
-				ProfileEvent_ZooKeeperWaitMicroseconds,
-				ProfileEvent_ZooKeeperBytesSent,
-				ProfileEvent_ZooKeeperBytesReceived,
-				CurrentMetric_ZooKeeperSession
-			from clusterAllReplicas(_CLUSTER_NAME, system.metric_log)
-			where event_time > now() - interval 3 day
-		) t
+		from clusterAllReplicas(_CLUSTER_NAME, system.metric_log)
+		where event_time > now() - interval 3 day
 		group by _shard_num, host_name
 	) t_s on t._shard_num = t_s._shard_num and t.host_name = t_s.host_name 
 ) m

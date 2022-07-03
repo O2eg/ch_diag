@@ -1,0 +1,1 @@
+select 'system.replicated_fetches is supported since 20.11' as Warning

@@ -1,0 +1,1 @@
+select 'system.errors is supported since 20.11' as Warning

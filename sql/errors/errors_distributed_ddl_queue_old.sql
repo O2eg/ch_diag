@@ -1,11 +1,1 @@
-select
-    entry,
-    host_name,
-    initiator,
-    port,
-    cluster,
-    status,
-    query,
-    exception_code
-from system.distributed_ddl_queue
-WHERE status != 'Finished' or exception_code != 0
+select 'system.distributed_ddl_queue is supported since 21.2' as Warning

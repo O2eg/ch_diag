@@ -8,3 +8,4 @@ select
 from clusterAllReplicas(_CLUSTER_NAME, system.detached_parts)
 group by _shard_num, host_name, database, table
 order by count_detached_parts desc
+limit 1000;

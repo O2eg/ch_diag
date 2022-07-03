@@ -1,11 +1,1 @@
-select
-	_shard_num,
-	hostName() as host_name,
-	database,
-	table,
-	name,
-	type,
-	expr,
-	granularity
-from clusterAllReplicas(_CLUSTER_NAME, system.data_skipping_indices)
-order by name;
+select 'system.data_skipping_indices is supported since 21.8' as Warning
