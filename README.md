@@ -1,5 +1,5 @@
 # ch_diag
-ClickHouse diagnostic tool
+ClickHouse 20.3+ diagnostic tool
 
 
 ```
