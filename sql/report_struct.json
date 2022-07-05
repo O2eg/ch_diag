@@ -210,7 +210,8 @@
 					"header": "Distributed DDL queue errors (based on <b>system.distributed_ddl_queue</b>)",
 					"report_sql": [
 						["0.0", "21.2", "errors_distributed_ddl_queue_old.sql"],
-						["21.2", "+", "errors_distributed_ddl_queue_21_2.sql"]
+						["21.2", "21.11", "errors_distributed_ddl_queue_21_2.sql"],
+						["21.11", "+", "errors_distributed_ddl_queue_21_11.sql"]
 					],
 					"footer": ""
 				},
