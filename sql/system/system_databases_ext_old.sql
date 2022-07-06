@@ -1,6 +1,6 @@
 select
 	_shard_num,
-	hostName() as host_name,
+	host_name,
 	database,
 	sum(rows) as total_rows,
 	sum(bytes_on_disk) as total_bytes,
