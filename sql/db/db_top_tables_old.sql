@@ -37,3 +37,4 @@ join (
 	t1.table = t2.name
 group by _shard_num, host_name, database, name
 order by total_bytes desc nulls last
+limit 100;

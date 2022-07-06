@@ -12,3 +12,4 @@ from clusterAllReplicas(_CLUSTER_NAME, system.tables)
 where database not in ('_system', 'system', 'information_schema', 'INFORMATION_SCHEMA')
 group by _shard_num, host_name, database, name
 order by _total_bytes desc nulls last
+limit 100;

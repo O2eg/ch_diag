@@ -22,4 +22,4 @@ SELECT
     zookeeper_exception
 from clusterAllReplicas(_CLUSTER_NAME, system.replicas)
 ORDER BY absolute_delay DESC
-LIMIT 3000
+LIMIT 5000
