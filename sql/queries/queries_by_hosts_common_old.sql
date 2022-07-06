@@ -20,7 +20,7 @@ from (
 		result_rows,
 		result_bytes,
 		memory_usage
-	from clusterAllReplicas(test_cluster, system.query_log)
+	from clusterAllReplicas(_CLUSTER_NAME, system.query_log)
 	where
 		exception_code = 0 and
 		query_start_time > now() - interval 3 day and

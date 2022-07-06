@@ -17,7 +17,7 @@ from (
 		engine,
 		rows,
 		bytes_on_disk
-	from clusterAllReplicas(test_cluster, system.parts)
+	from clusterAllReplicas(_CLUSTER_NAME, system.parts)
 	where database not in ('_system', 'system', 'information_schema', 'INFORMATION_SCHEMA')
 		and active = 1
 ) t1
@@ -28,7 +28,7 @@ join (
 		database,
 		name,
 		create_table_query
-	from clusterAllReplicas(test_cluster, system.tables)
+	from clusterAllReplicas(_CLUSTER_NAME, system.tables)
 	where database not in ('_system', 'system', 'information_schema', 'INFORMATION_SCHEMA')
 ) t2 on
 	t1._shard_num = t2._shard_num and
