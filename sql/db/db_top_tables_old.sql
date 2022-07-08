@@ -23,7 +23,7 @@ from (
 		and rows >= 1000	-- to facilitate the query
 	order by rows desc
 	limit 100000			-- to facilitate the query
-) t1
+) t1		-- to avoid "Cannot find column _shard_num in source stream"
 join (
 	select
 		_shard_num,

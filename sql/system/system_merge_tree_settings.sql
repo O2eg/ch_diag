@@ -3,6 +3,11 @@ select
 	hostName() as host_name,
 	name,
 	value,
+	if(
+		match(name, 'memory|bytes|part_size') and toInt64OrZero(value) > 10,
+		formatReadableSize(toInt64OrZero(value)),
+		toString(value)
+	) as pretty_value,
 	changed
 from clusterAllReplicas(_CLUSTER_NAME, system.merge_tree_settings)
 where
