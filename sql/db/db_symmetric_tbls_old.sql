@@ -3,7 +3,7 @@ select
 	name,
 	engine,
 	count(1) as count_tables,
-	-- any(replaceRegexpAll(create_table_query, 'PASSWORD\s\'.*?\'', '...')) as create_table_query,
+	any(replaceRegexpAll(create_table_query, 'PASSWORD\s\'.*?\'', '...')) as create_table_query,
 	arrayStringConcat(
 		arraySort(arrayDistinct(groupArray(concat(toString(_shard_num), '_', hostName())))),
 		'<br>'

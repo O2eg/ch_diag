@@ -3,7 +3,7 @@ select
 	name,
 	engine,
 	count(1) as count_tables,
-	-- any(replaceRegexpAll(create_table_query, 'PASSWORD\s\'.*?\'', '...')) as create_table_query,
+	any(replaceRegexpAll(create_table_query, 'PASSWORD\s\'.*?\'', '...')) as create_table_query,
 	sum(toInt64(total_rows)) as total_rows,
 	sum(toInt64(total_bytes)) as _total_bytes,
 	formatReadableSize(sum(toInt64(total_bytes))) as pretty_total_bytes,

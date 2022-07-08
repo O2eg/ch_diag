@@ -20,6 +20,9 @@ from (
 	from clusterAllReplicas(_CLUSTER_NAME, system.parts)
 	where database not in ('_system', 'system', 'information_schema', 'INFORMATION_SCHEMA')
 		and active = 1
+		and rows >= 1000	-- to facilitate the query
+	order by rows desc
+	limit 100000			-- to facilitate the query
 ) t1
 join (
 	select
