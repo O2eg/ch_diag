@@ -1,7 +1,8 @@
 select
 	_shard_num,
-	hostName() as host_name,
+	host_name,
 	any(type) as type,
+	exception_code,
 	any(exception) as exception,
 	any(is_initial_query) as is_initial_query,
 	any(client_name) as client_name,
@@ -14,6 +15,7 @@ from (
 		cityHash64(query) as normalized_query_hash,
 		type,
 		exception,
+		exception_code,
 		is_initial_query,
 		client_name,
 		query
@@ -22,6 +24,6 @@ from (
 		exception_code <> 0 and
 		event_time > now() - interval 7 day
 ) t
-group by _shard_num, host_name, normalized_query_hash
+group by _shard_num, host_name, exception_code, normalized_query_hash
 order by _shard_num, host_name, fail_times desc
 limit 100;
