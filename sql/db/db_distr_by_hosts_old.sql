@@ -1,6 +1,6 @@
 select
 	_shard_num,
-	hostName() as host_name,
+	host_name,
 	database,
 	count(1) as total_tables,
 	sum(toInt64(rows)) as total_rows,

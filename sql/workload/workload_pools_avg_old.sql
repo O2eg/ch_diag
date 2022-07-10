@@ -1,6 +1,6 @@
 select
 	_shard_num,
-	hostName() as host_name,
+	host_name,
 	floor(avg(CurrentMetric_BackgroundPoolTask), 2) as BackgroundPoolTask,
 	floor(avg(CurrentMetric_BackgroundMovePoolTask), 2) as MovePoolTask,
 	floor(avg(CurrentMetric_BackgroundSchedulePoolTask), 2) as SchedulePoolTask
