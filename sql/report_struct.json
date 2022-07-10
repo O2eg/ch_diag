@@ -620,6 +620,18 @@
 						["21.1", "+", "queries_top_mem_agg_21_1.sql"]
 					],
 					"footer": ""
+				},
+				"queries_top_long_profile_events_agg": {
+					"state": "expanded",
+					"type": "table",
+					"header": "Top long queries with <b>ProfileEvents</b> aggregated by <b>normalized_query_hash</b> and <b>event_name</b>",
+					"report_sql": [
+						["0.0", "20.4", "queries_top_long_profile_events_agg_old.sql"],
+						["20.4", "20.7", "queries_top_long_profile_events_agg_20_4.sql"],
+						["20.7", "21.1", "queries_top_long_profile_events_agg_20_7.sql"],
+						["21.1", "+", "queries_top_long_profile_events_agg_21_1.sql"]
+					],
+					"footer": ""
 				}
 			}
 		}
