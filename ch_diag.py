@@ -13,7 +13,7 @@ import argparse
 from pkg_resources import parse_version as version
 
 
-CH_DIAG_VERSION = '0.7'
+CH_DIAG_VERSION = '0.5.0'
 
 
 class TaskQueue:
