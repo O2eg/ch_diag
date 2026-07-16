@@ -1,0 +1,16 @@
+select
+	database,
+	name,
+	engine,
+	count(1) as total_tables,
+	sum(toInt64(total_rows)) as total_rows,
+	sum(toInt64(total_bytes)) as _total_bytes,
+	length(arrayDistinct(groupArray(concat(toString(_shard_num), '_', hostName())))) as count_hosts,
+	arrayStringConcat(
+		arraySort(arrayDistinct(groupArray(concat(toString(_shard_num), '_', hostName())))),
+		'<br>'
+	) as hosts
+from clusterAllReplicas({{cluster}}, system.tables)
+where database not in ('_system', 'system', 'information_schema', 'INFORMATION_SCHEMA')
+group by database, name, engine
+order by count_hosts, total_tables desc

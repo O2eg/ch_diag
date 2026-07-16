@@ -1,0 +1,56 @@
+name: publish release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: python -m pip install -e '.[dev]' twine
+      - run: python tools/check_release_version.py
+      - run: python -m compileall -q ch_diag tools tests
+      - run: ruff check ch_diag tests tools
+      - run: python tools/normalize_sql_outputs.py --check
+      - run: pytest -q
+      - run: ch-diag validate
+      - run: python -m build
+      - run: twine check dist/*
+      - name: Clean-wheel smoke
+        run: >-
+          docker run --rm
+          --volume "${PWD}:/src:ro"
+          --workdir /tmp
+          python:3.10-slim
+          sh -ec 'python -m pip install /src/dist/ch_diag-*.whl;
+          ch-diag validate;
+          ch-diag tags-list >/tmp/tags.txt;
+          test -s /tmp/tags.txt'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/ch-diag
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

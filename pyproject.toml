@@ -1,0 +1,97 @@
+[build-system]
+requires = ["setuptools>=77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ch-diag"
+version = "0.9.0"
+description = "Declarative ClickHouse diagnostic report utility"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT AND BSD-3-Clause AND Apache-2.0"
+license-files = [
+  "LICENSE",
+  "ch_diag/render/vendor/*LICENSE*",
+  "ch_diag/render/vendor/*NOTICE*",
+  "ch_diag/render/vendor/THIRD_PARTY_LICENSES.txt",
+]
+authors = [
+  { name = "O2eg", email = "oleg.ispu@yandex.ru" },
+]
+keywords = ["clickhouse", "diagnostics", "dba"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: System Administrators",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Topic :: Database",
+  "Topic :: System :: Systems Administration",
+]
+dependencies = [
+  "PyYAML>=6.0",
+  "clickhouse-driver>=0.2.7",
+  "asyncssh>=2.21,<3",
+]
+
+[project.optional-dependencies]
+test = [
+  "jsonschema>=4.20",
+  "pytest>=7.4",
+  "tomli>=2.0; python_version < '3.11'",
+]
+dev = [
+  "build>=1.2",
+  "jsonschema>=4.20",
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "ruff>=0.5",
+  "tomli>=2.0; python_version < '3.11'",
+]
+browser = ["playwright>=1.45"]
+
+[project.scripts]
+ch-diag = "ch_diag.cli:main"
+ch-diag-legacy = "ch_diag.legacy_cli:main"
+
+[project.urls]
+Homepage = "https://github.com/O2eg/ch_diag"
+Repository = "https://github.com/O2eg/ch_diag"
+Issues = "https://github.com/O2eg/ch_diag/issues"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+  "integration: requires a live ClickHouse endpoint",
+  "browser: requires Playwright and its Chromium browser",
+]
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = ["ch_diag*"]
+namespaces = false
+
+[tool.setuptools.package-data]
+ch_diag = [
+  "content/**/*",
+  "schemas/*.json",
+  "render/templates/*.html",
+  "render/vendor/*.css",
+  "render/vendor/*.js",
+  "render/vendor/*.txt",
+]
+
+[tool.setuptools.exclude-package-data]
+ch_diag = [
+  "content/**/__pycache__/*",
+  "content/**/*.pyc",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

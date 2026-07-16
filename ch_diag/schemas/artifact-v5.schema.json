@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/O2eg/ch_diag/schemas/artifact-v5.schema.json",
+  "title": "ch_diag diagnostic artifact schema v5",
+  "type": "object",
+  "required": [
+    "artifact_schema_version", "generator", "content", "report", "database",
+    "target", "runtime", "display", "sections", "items", "query_texts",
+    "snapshot_schemas", "snapshots", "diagnostics"
+  ],
+  "properties": {
+    "artifact_schema_version": {"const": 5},
+    "generator": {
+      "type": "object",
+      "required": ["name", "product", "version"],
+      "properties": {
+        "name": {"const": "ch_diag"},
+        "product": {"const": "ch_diag"},
+        "version": {"type": "string", "minLength": 1}
+      }
+    },
+    "content": {"type": "object"},
+    "report": {"type": "object", "required": ["id", "title"]},
+    "database": {
+      "type": "object",
+      "required": ["engine", "server_version"],
+      "properties": {"engine": {"const": "clickhouse"}}
+    },
+    "target": {
+      "type": "object",
+      "required": ["execution_scope", "cluster_name", "connection_endpoint", "host_scope"],
+      "properties": {
+        "execution_scope": {"enum": ["node", "cluster"]},
+        "cluster_name": {"type": ["string", "null"]},
+        "connection_endpoint": {
+          "type": "object",
+          "required": ["host", "port"]
+        },
+        "host_scope": {"enum": ["collector", "ssh_target"]}
+      }
+    },
+    "runtime": {"type": "object"},
+    "display": {"type": "object"},
+    "sections": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/section"}
+    },
+    "items": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/item"}
+    },
+    "query_texts": {"type": "object"},
+    "snapshot_schemas": {"type": "object"},
+    "snapshots": {"type": "array", "items": {"type": "object"}},
+    "diagnostics": {"type": "array", "items": {"$ref": "#/$defs/diagnostic"}}
+  },
+  "$defs": {
+    "section": {
+      "type": "object",
+      "required": ["section_id", "title", "state", "items"],
+      "properties": {
+        "section_id": {"type": "string", "minLength": 1},
+        "title": {"type": "string", "minLength": 1},
+        "state": {"enum": ["expanded", "collapsed", "hidden"]},
+        "items": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "required": ["level", "code", "message"],
+      "properties": {
+        "level": {"enum": ["info", "warning", "error"]},
+        "code": {"type": "string", "minLength": 1},
+        "message": {"type": "string"}
+      }
+    },
+    "column": {
+      "type": "object",
+      "required": [
+        "name", "label", "source_type", "value_kind", "semantic_role",
+        "quantity", "unit", "quality", "nullable", "encoding"
+      ],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "label": {"type": "string"},
+        "source_type": {"type": "string"},
+        "value_kind": {"enum": ["integer", "decimal", "timestamp", "date", "boolean", "json", "text"]},
+        "semantic_role": {"enum": ["gauge", "duration", "state", "label"]},
+        "quantity": {"type": "string", "minLength": 1},
+        "unit": {"type": "string", "minLength": 1},
+        "quality": {"enum": ["exact", "estimated", "derived"]},
+        "nullable": {"type": "boolean"},
+        "encoding": {"enum": ["decimal_string", "json_string", "json_number", "json_boolean", "json_value"]}
+      }
+    },
+    "result": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {"kind": {"enum": ["table", "plain_text", "chart", "none"]}},
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "table"}}},
+          "then": {
+            "required": ["columns", "rows", "row_count"],
+            "properties": {
+              "columns": {"type": "array", "items": {"$ref": "#/$defs/column"}},
+              "rows": {"type": "array", "items": {"type": "array"}},
+              "row_count": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"kind": {"const": "chart"}}},
+          "then": {
+            "required": ["series", "series_count"],
+            "properties": {
+              "series": {"type": "array"},
+              "series_count": {"type": "integer", "minimum": 0},
+              "point_count": {"type": "integer", "minimum": 0}
+            }
+          }
+        }
+      ]
+    },
+    "item": {
+      "type": "object",
+      "required": [
+        "item_id", "section_id", "item_key", "title", "source_kind", "source_id",
+        "state", "collection_status", "severity_level", "collected_at", "result",
+        "source_metadata", "issues", "diagnostics"
+      ],
+      "properties": {
+        "collection_status": {
+          "enum": ["ok", "empty", "error", "unsupported", "permission_denied", "timeout", "skipped"]
+        },
+        "result": {"$ref": "#/$defs/result"},
+        "diagnostics": {"type": "array", "items": {"$ref": "#/$defs/diagnostic"}}
+      }
+    }
+  }
+}

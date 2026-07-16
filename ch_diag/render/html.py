@@ -1,0 +1,104 @@
+"""Self-contained HTML renderer for ch_diag schema-version-5 artifacts."""
+
+from __future__ import annotations
+
+import html
+import json
+import re
+from copy import deepcopy
+from functools import lru_cache
+from importlib.resources import files
+from pathlib import Path
+from typing import Any
+
+from ch_diag.artifact import strip_artifact_metadata, validate_artifact, write_text_secure
+
+_SCRIPT_END_RE = re.compile(r"</script", re.IGNORECASE)
+_STYLE_END_RE = re.compile(r"</style", re.IGNORECASE)
+
+
+def render_html(artifact: dict[str, Any], *, validate: bool = True) -> str:
+    if validate:
+        validate_artifact(artifact)
+    artifact = _publicize_artifact_for_render(artifact)
+    payload = _safe_json_payload(artifact)
+    title = html.escape(str(artifact["report"]["title"]))
+    replacements = {
+        "__TITLE__": title,
+        "__PAYLOAD__": payload,
+        "__ECHARTS_JS__": _inline_script(_read_render_resource("vendor", "echarts-6.1.0.min.js")),
+        "__HIGHLIGHT_JS__": _inline_script(
+            _read_render_resource("vendor", "highlight-11.11.1.min.js")
+        ),
+        "__HIGHLIGHT_CSS__": _inline_style(
+            _read_render_resource("vendor", "highlight-github-dark-11.11.1.min.css")
+        ),
+        "__THIRD_PARTY_LICENSES__": _inline_script(_third_party_licenses()),
+    }
+    pattern = re.compile("|".join(re.escape(key) for key in replacements))
+    return pattern.sub(lambda match: replacements[match.group(0)], _html_template())
+
+
+def render_from_json(
+    json_path: str | Path,
+    html_path: str | Path,
+    *,
+    strip_meta: bool = False,
+) -> None:
+    artifact = json.loads(Path(json_path).read_text(encoding="utf-8"))
+    if strip_meta:
+        strip_artifact_metadata(artifact)
+    write_text_secure(html_path, render_html(artifact))
+
+
+def _safe_json_payload(artifact: dict[str, Any]) -> str:
+    payload = json.dumps(artifact, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+    return (
+        payload.replace("&", "\\u0026")
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
+
+
+@lru_cache(maxsize=1)
+def _html_template() -> str:
+    return _read_render_resource("templates", "report.html")
+
+
+@lru_cache(maxsize=None)
+def _read_render_resource(*path_parts: str) -> str:
+    return files("ch_diag.render").joinpath(*path_parts).read_text(encoding="utf-8")
+
+
+def _inline_script(value: str) -> str:
+    return _SCRIPT_END_RE.sub("<\\/script", value)
+
+
+def _inline_style(value: str) -> str:
+    return _STYLE_END_RE.sub("<\\/style", value)
+
+
+@lru_cache(maxsize=1)
+def _third_party_licenses() -> str:
+    sections = [
+        _read_render_resource("vendor", "THIRD_PARTY_LICENSES.txt"),
+        "Apache ECharts 6.1.0 - Apache-2.0 license\n\n"
+        + _read_render_resource("vendor", "echarts-6.1.0.LICENSE.txt"),
+        "Apache ECharts 6.1.0 - NOTICE\n\n"
+        + _read_render_resource("vendor", "echarts-6.1.0.NOTICE.txt"),
+        "Apache ECharts 6.1.0 embedded d3 components - BSD-3-Clause license\n\n"
+        + _read_render_resource("vendor", "echarts-6.1.0.LICENSE-d3.txt"),
+        "highlight.js 11.11.1 - BSD-3-Clause license\n\n"
+        + _read_render_resource("vendor", "highlight-11.11.1.LICENSE.txt"),
+    ]
+    return "\n\n".join(section.rstrip() for section in sections) + "\n"
+
+
+def _publicize_artifact_for_render(artifact: dict[str, Any]) -> dict[str, Any]:
+    public = deepcopy(artifact)
+    public["runtime"]["snapshot_count"] = len(artifact.get("snapshots") or [])
+    public["snapshots"] = []
+    public["snapshot_schemas"] = {}
+    return public

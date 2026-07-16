@@ -1,0 +1,5 @@
+recursive-include docs *.md
+recursive-include ch_diag/schemas *.json
+recursive-include tests *.py *.md *.yaml *.xml *.sql Dockerfile *.sh
+include tests/integration/docker/sshd_config
+recursive-include tools *.py

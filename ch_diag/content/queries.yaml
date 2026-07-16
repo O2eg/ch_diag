@@ -1,0 +1,2801 @@
+query_catalog:
+  schema_version: 5
+  sql_root: queries
+queries:
+  overview.server:
+    title: ClickHouse Server Version
+    description: Server version, hostname, current database and current user.
+    variants:
+    - id: overview_server_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: overview/server_node.sql
+    - id: overview_server_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: overview/server_cluster.sql
+    collection_scope: once
+    cost_class: low
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.one
+      legacy_equivalent: null
+      collector_limits_apply: true
+  overview.clusters:
+    title: Configured Clusters
+    description: Cluster, shard and replica topology known to the connected node.
+    variants:
+    - id: overview_clusters_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      - cluster
+      sql_file: overview/clusters.sql
+    collection_scope: once
+    cost_class: low
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.clusters
+      legacy_equivalent: null
+      collector_limits_apply: true
+  configuration.changed_settings:
+    title: Changed Settings
+    description: Settings which differ from their profile defaults.
+    variants:
+    - id: changed_settings_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: configuration/changed_settings_node.sql
+    - id: changed_settings_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: configuration/changed_settings_cluster.sql
+    collection_scope: once
+    cost_class: low
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.settings
+      legacy_equivalent: null
+      collector_limits_apply: true
+  legacy.system.system_common:
+    title: Common cluster information
+    description: Common cluster information
+    legacy_item_id: system.system_common
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_system_system_common_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_common_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_system_system_common_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_common_20_11.sql
+      max_ch_version: '21.11'
+    - id: legacy_system_system_common_3
+      min_ch_version: '21.11'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_common_21_11.sql
+    - id: legacy_system_system_common_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_common_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_system_system_common_1
+    - id: legacy_system_system_common_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_common_20_11.sql
+      max_ch_version: '21.11'
+      derived_from: legacy_system_system_common_2
+    - id: legacy_system_system_common_3_node
+      min_ch_version: '21.11'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_common_21_11.sql
+      derived_from: legacy_system_system_common_3
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.asynchronous_metric_log
+      - system.one
+      legacy_equivalent: system.system_common
+      collector_limits_apply: true
+  legacy.system.system_clusters:
+    title: List of clusters
+    description: Contains full output of system.clusters
+    legacy_item_id: system.system_clusters
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_system_system_clusters_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_clusters.sql
+    - id: legacy_system_system_clusters_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_clusters.sql
+      derived_from: legacy_system_system_clusters_1
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.clusters
+      legacy_equivalent: system.system_clusters
+      collector_limits_apply: true
+  legacy.system.system_macros:
+    title: List of macros (based on system.macros)
+    description: Contains full output of system.macros
+    legacy_item_id: system.system_macros
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_system_system_macros_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_macros.sql
+    - id: legacy_system_system_macros_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_macros.sql
+      derived_from: legacy_system_system_macros_1
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.macros
+      legacy_equivalent: system.system_macros
+      collector_limits_apply: true
+  legacy.system.system_databases:
+    title: List of databases (based on system.databases)
+    description: List of databases (based on system.databases)
+    legacy_item_id: system.system_databases
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_system_system_databases_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_databases.sql
+    - id: legacy_system_system_databases_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_databases.sql
+      derived_from: legacy_system_system_databases_1
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.databases
+      legacy_equivalent: system.system_databases
+      collector_limits_apply: true
+  legacy.system.system_databases_ext:
+    title: Databases common stat (based on system.tables)
+    description: Databases common stat (based on system.tables)
+    legacy_item_id: system.system_databases_ext
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_system_system_databases_ext_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_databases_ext_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_system_system_databases_ext_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_databases_ext_20_11.sql
+    - id: legacy_system_system_databases_ext_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_databases_ext_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_system_system_databases_ext_1
+    - id: legacy_system_system_databases_ext_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_databases_ext_20_11.sql
+      derived_from: legacy_system_system_databases_ext_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.parts
+      - system.tables
+      legacy_equivalent: system.system_databases_ext
+      collector_limits_apply: true
+  legacy.system.system_storage_policies:
+    title: List of storage policies (based on system.storage_policies)
+    description: List of storage policies (based on system.storage_policies)
+    legacy_item_id: system.system_storage_policies
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_system_system_storage_policies_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_storage_policies_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_system_system_storage_policies_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_storage_policies_20_11.sql
+    - id: legacy_system_system_storage_policies_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_storage_policies_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_system_system_storage_policies_1
+    - id: legacy_system_system_storage_policies_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_storage_policies_20_11.sql
+      derived_from: legacy_system_system_storage_policies_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.storage_policies
+      legacy_equivalent: system.system_storage_policies
+      collector_limits_apply: true
+  legacy.system.system_disks:
+    title: List of disks (based on system.disks)
+    description: List of disks (based on system.disks)
+    legacy_item_id: system.system_disks
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_system_system_disks_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_disks_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_system_system_disks_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_disks_20_11.sql
+    - id: legacy_system_system_disks_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_disks_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_system_system_disks_1
+    - id: legacy_system_system_disks_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_disks_20_11.sql
+      derived_from: legacy_system_system_disks_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.disks
+      legacy_equivalent: system.system_disks
+      collector_limits_apply: true
+  legacy.system.system_settings:
+    title: Config parameters (based on system.settings)
+    description: Config parameters (based on system.settings)
+    legacy_item_id: system.system_settings
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_system_system_settings_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_settings.sql
+    - id: legacy_system_system_settings_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_settings.sql
+      derived_from: legacy_system_system_settings_1
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.settings
+      legacy_equivalent: system.system_settings
+      collector_limits_apply: true
+  legacy.system.system_merge_tree_settings:
+    title: MergeTree parameters (based on system.merge_tree_settings)
+    description: MergeTree parameters (based on system.merge_tree_settings)
+    legacy_item_id: system.system_merge_tree_settings
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_system_system_merge_tree_settings_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_merge_tree_settings.sql
+    - id: legacy_system_system_merge_tree_settings_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_merge_tree_settings.sql
+      derived_from: legacy_system_system_merge_tree_settings_1
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.merge_tree_settings
+      legacy_equivalent: system.system_merge_tree_settings
+      collector_limits_apply: true
+  legacy.system.system_events:
+    title: Events in cluster (based on system.events)
+    description: Events in cluster (based on system.events)
+    legacy_item_id: system.system_events
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_system_system_events_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_events_old.sql
+      max_ch_version: '21.1'
+    - id: legacy_system_system_events_2
+      min_ch_version: '21.1'
+      scopes:
+      - cluster
+      sql_file: legacy/system/system_events_21_1.sql
+    - id: legacy_system_system_events_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_events_old.sql
+      max_ch_version: '21.1'
+      derived_from: legacy_system_system_events_1
+    - id: legacy_system_system_events_2_node
+      min_ch_version: '21.1'
+      scopes:
+      - node
+      sql_file: legacy_node/system/system_events_21_1.sql
+      derived_from: legacy_system_system_events_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.events
+      legacy_equivalent: system.system_events
+      collector_limits_apply: true
+  legacy.errors.errors_top:
+    title: Top 20 errors in cluster (based on system.errors)
+    description: Top 20 errors in cluster (based on system.errors)
+    legacy_item_id: errors.errors_top
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_errors_errors_top_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_top_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_errors_errors_top_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_top_20_11.sql
+      max_ch_version: '21.4'
+    - id: legacy_errors_errors_top_3
+      min_ch_version: '21.4'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_top_21_4.sql
+    - id: legacy_errors_errors_top_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_top_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_errors_errors_top_1
+    - id: legacy_errors_errors_top_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_top_20_11.sql
+      max_ch_version: '21.4'
+      derived_from: legacy_errors_errors_top_2
+    - id: legacy_errors_errors_top_3_node
+      min_ch_version: '21.4'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_top_21_4.sql
+      derived_from: legacy_errors_errors_top_3
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.errors
+      legacy_equivalent: errors.errors_top
+      collector_limits_apply: true
+  legacy.errors.errors_last:
+    title: Last 20 errors in cluster (based on system.errors)
+    description: Last 20 errors in cluster (based on system.errors)
+    legacy_item_id: errors.errors_last
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_errors_errors_last_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_last_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_errors_errors_last_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_last_20_11.sql
+      max_ch_version: '21.4'
+    - id: legacy_errors_errors_last_3
+      min_ch_version: '21.4'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_last_21_4.sql
+    - id: legacy_errors_errors_last_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_last_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_errors_errors_last_1
+    - id: legacy_errors_errors_last_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_last_20_11.sql
+      max_ch_version: '21.4'
+      derived_from: legacy_errors_errors_last_2
+    - id: legacy_errors_errors_last_3_node
+      min_ch_version: '21.4'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_last_21_4.sql
+      derived_from: legacy_errors_errors_last_3
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.errors
+      legacy_equivalent: errors.errors_last
+      collector_limits_apply: true
+  legacy.errors.errors_mutations:
+    title: Mutation erros (based on system.mutations)
+    description: Mutation erros (based on system.mutations)
+    legacy_item_id: errors.errors_mutations
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_errors_errors_mutations_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_mutations.sql
+    - id: legacy_errors_errors_mutations_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_mutations.sql
+      derived_from: legacy_errors_errors_mutations_1
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.mutations
+      legacy_equivalent: errors.errors_mutations
+      collector_limits_apply: true
+  legacy.errors.errors_stat:
+    title: Common erros (based on system.metric_log)
+    description: Common erros (based on system.metric_log)
+    legacy_item_id: errors.errors_stat
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_errors_errors_stat_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_stat_old.sql
+      max_ch_version: '20.5'
+    - id: legacy_errors_errors_stat_2
+      min_ch_version: '20.5'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_stat_20_5.sql
+    - id: legacy_errors_errors_stat_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_stat_old.sql
+      max_ch_version: '20.5'
+      derived_from: legacy_errors_errors_stat_1
+    - id: legacy_errors_errors_stat_2_node
+      min_ch_version: '20.5'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_stat_20_5.sql
+      derived_from: legacy_errors_errors_stat_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.metric_log
+      legacy_equivalent: errors.errors_stat
+      collector_limits_apply: true
+  legacy.errors.errors_queries:
+    title: Failed queries (based on system.query_log)
+    description: Failed queries (based on system.query_log)
+    legacy_item_id: errors.errors_queries
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_errors_errors_queries_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_queries_old.sql
+      max_ch_version: '21.1'
+    - id: legacy_errors_errors_queries_2
+      min_ch_version: '21.1'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_queries_21_1.sql
+    - id: legacy_errors_errors_queries_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_queries_old.sql
+      max_ch_version: '21.1'
+      derived_from: legacy_errors_errors_queries_1
+    - id: legacy_errors_errors_queries_2_node
+      min_ch_version: '21.1'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_queries_21_1.sql
+      derived_from: legacy_errors_errors_queries_2
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.query_log
+      legacy_equivalent: errors.errors_queries
+      collector_limits_apply: true
+  legacy.errors.errors_dictionaries:
+    title: Failed dictionaries (based on system.dictionaries)
+    description: Failed dictionaries (based on system.dictionaries)
+    legacy_item_id: errors.errors_dictionaries
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_errors_errors_dictionaries_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_dictionaries.sql
+    - id: legacy_errors_errors_dictionaries_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_dictionaries.sql
+      derived_from: legacy_errors_errors_dictionaries_1
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.dictionaries
+      legacy_equivalent: errors.errors_dictionaries
+      collector_limits_apply: true
+  legacy.errors.errors_distribution_queue:
+    title: Errors in distributed tables (based on system.distribution_queue)
+    description: Errors in distributed tables (based on system.distribution_queue)
+    legacy_item_id: errors.errors_distribution_queue
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_errors_errors_distribution_queue_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_distribution_queue_old.sql
+      max_ch_version: '20.5'
+    - id: legacy_errors_errors_distribution_queue_2
+      min_ch_version: '20.5'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_distribution_queue_20_5.sql
+    - id: legacy_errors_errors_distribution_queue_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_distribution_queue_old.sql
+      max_ch_version: '20.5'
+      derived_from: legacy_errors_errors_distribution_queue_1
+    - id: legacy_errors_errors_distribution_queue_2_node
+      min_ch_version: '20.5'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_distribution_queue_20_5.sql
+      derived_from: legacy_errors_errors_distribution_queue_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.distribution_queue
+      legacy_equivalent: errors.errors_distribution_queue
+      collector_limits_apply: true
+  legacy.errors.errors_replicas:
+    title: Replication errors (based on system.replicas)
+    description: Replication errors (based on system.replicas)
+    legacy_item_id: errors.errors_replicas
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_errors_errors_replicas_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_replicas_old.sql
+      max_ch_version: '21.9'
+    - id: legacy_errors_errors_replicas_2
+      min_ch_version: '21.9'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_replicas_21_9.sql
+    - id: legacy_errors_errors_replicas_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_replicas_old.sql
+      max_ch_version: '21.9'
+      derived_from: legacy_errors_errors_replicas_1
+    - id: legacy_errors_errors_replicas_2_node
+      min_ch_version: '21.9'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_replicas_21_9.sql
+      derived_from: legacy_errors_errors_replicas_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.replicas
+      legacy_equivalent: errors.errors_replicas
+      collector_limits_apply: true
+  legacy.errors.errors_replication_queue:
+    title: Replication queue errors (based on system.replication_queue)
+    description: Replication queue errors (based on system.replication_queue)
+    legacy_item_id: errors.errors_replication_queue
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_errors_errors_replication_queue_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_replication_queue.sql
+    - id: legacy_errors_errors_replication_queue_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_replication_queue.sql
+      derived_from: legacy_errors_errors_replication_queue_1
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.replication_queue
+      legacy_equivalent: errors.errors_replication_queue
+      collector_limits_apply: true
+  legacy.errors.errors_distributed_ddl_queue:
+    title: Distributed DDL queue errors (based on system.distributed_ddl_queue)
+    description: Distributed DDL queue errors (based on system.distributed_ddl_queue)
+    legacy_item_id: errors.errors_distributed_ddl_queue
+    sensitivity: sensitive
+    optional: true
+    timeout_seconds: 15
+    variants:
+    - id: legacy_errors_errors_distributed_ddl_queue_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_distributed_ddl_queue_old.sql
+      max_ch_version: '21.2'
+    - id: legacy_errors_errors_distributed_ddl_queue_2
+      min_ch_version: '21.2'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_distributed_ddl_queue_21_2.sql
+      max_ch_version: '21.11'
+    - id: legacy_errors_errors_distributed_ddl_queue_3
+      min_ch_version: '21.11'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_distributed_ddl_queue_21_11.sql
+    - id: legacy_errors_errors_distributed_ddl_queue_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_distributed_ddl_queue_old.sql
+      max_ch_version: '21.2'
+      derived_from: legacy_errors_errors_distributed_ddl_queue_1
+    - id: legacy_errors_errors_distributed_ddl_queue_2_node
+      min_ch_version: '21.2'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_distributed_ddl_queue_21_2.sql
+      max_ch_version: '21.11'
+      derived_from: legacy_errors_errors_distributed_ddl_queue_2
+    - id: legacy_errors_errors_distributed_ddl_queue_3_node
+      min_ch_version: '21.11'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_distributed_ddl_queue_21_11.sql
+      derived_from: legacy_errors_errors_distributed_ddl_queue_3
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.distributed_ddl_queue
+      legacy_equivalent: errors.errors_distributed_ddl_queue
+      collector_limits_apply: true
+  legacy.errors.errors_keeper:
+    title: Keeper errors (based on system.metric_log)
+    description: Keeper errors (based on system.metric_log)
+    legacy_item_id: errors.errors_keeper
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_errors_errors_keeper_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_keeper_old.sql
+      max_ch_version: '21.11'
+    - id: legacy_errors_errors_keeper_2
+      min_ch_version: '21.11'
+      scopes:
+      - cluster
+      sql_file: legacy/errors/errors_keeper_20_11.sql
+    - id: legacy_errors_errors_keeper_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_keeper_old.sql
+      max_ch_version: '21.11'
+      derived_from: legacy_errors_errors_keeper_1
+    - id: legacy_errors_errors_keeper_2_node
+      min_ch_version: '21.11'
+      scopes:
+      - node
+      sql_file: legacy_node/errors/errors_keeper_20_11.sql
+      derived_from: legacy_errors_errors_keeper_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.metric_log
+      - system.one
+      legacy_equivalent: errors.errors_keeper
+      collector_limits_apply: true
+  legacy.db.db_dictionaries:
+    title: All dictionaries stat (based on system.dictionaries)
+    description: All dictionaries stat (based on system.dictionaries)
+    legacy_item_id: db.db_dictionaries
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_dictionaries_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_dictionaries_old.sql
+      max_ch_version: '21.6'
+    - id: legacy_db_db_dictionaries_2
+      min_ch_version: '21.6'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_dictionaries_21_6.sql
+    - id: legacy_db_db_dictionaries_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_dictionaries_old.sql
+      max_ch_version: '21.6'
+      derived_from: legacy_db_db_dictionaries_1
+    - id: legacy_db_db_dictionaries_2_node
+      min_ch_version: '21.6'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_dictionaries_21_6.sql
+      derived_from: legacy_db_db_dictionaries_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.dictionaries
+      legacy_equivalent: db.db_dictionaries
+      collector_limits_apply: true
+  legacy.db.db_distr_by_hosts:
+    title: Distribution of databases across cluster hosts
+    description: Distribution of databases across cluster hosts
+    legacy_item_id: db.db_distr_by_hosts
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_distr_by_hosts_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_distr_by_hosts_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_db_db_distr_by_hosts_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_distr_by_hosts_20_11.sql
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.parts
+      - system.tables
+      legacy_equivalent: db.db_distr_by_hosts
+      collector_limits_apply: true
+  legacy.db.db_distr_engines_by_hosts:
+    title: Distribution of table engines across databases and across cluster hosts
+    description: Distribution of table engines across databases and across cluster hosts
+    legacy_item_id: db.db_distr_engines_by_hosts
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_distr_engines_by_hosts_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_distr_engines_by_hosts_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_db_db_distr_engines_by_hosts_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_distr_engines_by_hosts_20_11.sql
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.tables
+      legacy_equivalent: db.db_distr_engines_by_hosts
+      collector_limits_apply: true
+  legacy.db.db_stats:
+    title: Databases stat (based on system.tables)
+    description: Databases stat (based on system.tables)
+    legacy_item_id: db.db_stats
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_stats_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_stats_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_db_db_stats_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_stats_20_11.sql
+    - id: legacy_db_db_stats_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_stats_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_db_db_stats_1
+    - id: legacy_db_db_stats_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_stats_20_11.sql
+      derived_from: legacy_db_db_stats_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.tables
+      legacy_equivalent: db.db_stats
+      collector_limits_apply: true
+  legacy.db.db_tbl_engines_stat:
+    title: Table engines stat (based on system.tables)
+    description: Table engines stat (based on system.tables)
+    legacy_item_id: db.db_tbl_engines_stat
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_tbl_engines_stat_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_tbl_engines_stat_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_db_db_tbl_engines_stat_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_tbl_engines_stat_20_11.sql
+    - id: legacy_db_db_tbl_engines_stat_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_tbl_engines_stat_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_db_db_tbl_engines_stat_1
+    - id: legacy_db_db_tbl_engines_stat_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_tbl_engines_stat_20_11.sql
+      derived_from: legacy_db_db_tbl_engines_stat_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.tables
+      legacy_equivalent: db.db_tbl_engines_stat
+      collector_limits_apply: true
+  legacy.db.db_distr_tbl_engines:
+    title: Distribution of table engines by databases
+    description: Distribution of table engines by databases
+    legacy_item_id: db.db_distr_tbl_engines
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_distr_tbl_engines_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_distr_tbl_engines_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_db_db_distr_tbl_engines_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_distr_tbl_engines_20_11.sql
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.tables
+      legacy_equivalent: db.db_distr_tbl_engines
+      collector_limits_apply: true
+  legacy.db.db_distr_tbl_engines_by_hosts:
+    title: Distribution of tables across cluster hosts
+    description: Distribution of tables across cluster hosts
+    legacy_item_id: db.db_distr_tbl_engines_by_hosts
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_distr_tbl_engines_by_hosts_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_distr_tbl_engines_by_hosts_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_db_db_distr_tbl_engines_by_hosts_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_distr_tbl_engines_by_hosts_20_11.sql
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.tables
+      legacy_equivalent: db.db_distr_tbl_engines_by_hosts
+      collector_limits_apply: true
+  legacy.db.db_top_tables:
+    title: Top tables by size (with full DDL)
+    description: Top tables by size (with full DDL)
+    legacy_item_id: db.db_top_tables
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_top_tables_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_top_tables_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_db_db_top_tables_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_top_tables_20_11.sql
+    - id: legacy_db_db_top_tables_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_top_tables_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_db_db_top_tables_1
+    - id: legacy_db_db_top_tables_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_top_tables_20_11.sql
+      derived_from: legacy_db_db_top_tables_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.parts
+      - system.tables
+      legacy_equivalent: db.db_top_tables
+      collector_limits_apply: true
+  legacy.db.db_data_skipping_indices:
+    title: Data skipping indices stat
+    description: Data skipping indices stat
+    legacy_item_id: db.db_data_skipping_indices
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_data_skipping_indices_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_data_skipping_indices_old.sql
+      max_ch_version: '21.8'
+    - id: legacy_db_db_data_skipping_indices_2
+      min_ch_version: '21.8'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_data_skipping_indices_21_8.sql
+      max_ch_version: '21.11'
+    - id: legacy_db_db_data_skipping_indices_3
+      min_ch_version: '21.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_data_skipping_indices_21_11.sql
+      max_ch_version: '25.0'
+    - id: legacy_db_db_data_skipping_indices_4
+      min_ch_version: '25.0'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_data_skipping_indices_25_0.sql
+      compatibility_reason: ClickHouse 25 exposes type_full and marks_bytes instead of the
+        legacy marks layout.
+    - id: legacy_db_db_data_skipping_indices_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_data_skipping_indices_old.sql
+      max_ch_version: '21.8'
+      derived_from: legacy_db_db_data_skipping_indices_1
+    - id: legacy_db_db_data_skipping_indices_2_node
+      min_ch_version: '21.8'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_data_skipping_indices_21_8.sql
+      max_ch_version: '21.11'
+      derived_from: legacy_db_db_data_skipping_indices_2
+    - id: legacy_db_db_data_skipping_indices_3_node
+      min_ch_version: '21.11'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_data_skipping_indices_21_11.sql
+      max_ch_version: '25.0'
+      derived_from: legacy_db_db_data_skipping_indices_3
+    - id: legacy_db_db_data_skipping_indices_4_node
+      min_ch_version: '25.0'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_data_skipping_indices_25_0.sql
+      derived_from: legacy_db_db_data_skipping_indices_4
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.data_skipping_indices
+      legacy_equivalent: db.db_data_skipping_indices
+      collector_limits_apply: true
+  legacy.db.db_asymmetric_tbls:
+    title: Tables that are not on all nodes included in the cluster
+    description: Tables that are not on all nodes included in the cluster
+    legacy_item_id: db.db_asymmetric_tbls
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_asymmetric_tbls_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_asymmetric_tbls_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_db_db_asymmetric_tbls_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_asymmetric_tbls_20_11.sql
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.clusters
+      - system.tables
+      legacy_equivalent: db.db_asymmetric_tbls
+      collector_limits_apply: true
+  legacy.db.db_symmetric_tbls:
+    title: Tables that are on all nodes included in the cluster
+    description: Tables that are on all nodes included in the cluster
+    legacy_item_id: db.db_symmetric_tbls
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_symmetric_tbls_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_symmetric_tbls_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_db_db_symmetric_tbls_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_symmetric_tbls_20_11.sql
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.clusters
+      - system.tables
+      legacy_equivalent: db.db_symmetric_tbls
+      collector_limits_apply: true
+  legacy.db.db_tbls_with_diff_ddls:
+    title: Tables with the same name, but with different DDLs
+    description: Tables with the same name, but with different DDLs
+    legacy_item_id: db.db_tbls_with_diff_ddls
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_tbls_with_diff_ddls_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_tbls_with_diff_ddls.sql
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.tables
+      legacy_equivalent: db.db_tbls_with_diff_ddls
+      collector_limits_apply: true
+  legacy.db.db_detached_parts:
+    title: Detached parts and reasons
+    description: Detached parts and reasons
+    legacy_item_id: db.db_detached_parts
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_detached_parts_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_detached_parts_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_db_db_detached_parts_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_detached_parts_20_11.sql
+    - id: legacy_db_db_detached_parts_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_detached_parts_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_db_db_detached_parts_1
+    - id: legacy_db_db_detached_parts_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_detached_parts_20_11.sql
+      derived_from: legacy_db_db_detached_parts_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.detached_parts
+      legacy_equivalent: db.db_detached_parts
+      collector_limits_apply: true
+  legacy.db.db_parts_stat:
+    title: Dataparts statistics
+    description: Dataparts statistics
+    legacy_item_id: db.db_parts_stat
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_db_db_parts_stat_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_parts_stat_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_db_db_parts_stat_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/db/db_parts_stat_20_11.sql
+    - id: legacy_db_db_parts_stat_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_parts_stat_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_db_db_parts_stat_1
+    - id: legacy_db_db_parts_stat_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/db/db_parts_stat_20_11.sql
+      derived_from: legacy_db_db_parts_stat_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.parts
+      legacy_equivalent: db.db_parts_stat
+      collector_limits_apply: true
+  legacy.replication.repl_queue:
+    title: Replication queue (based on system.replication_queue)
+    description: Tasks from replication queues stored in Clickhouse Keeper or ZooKeeper, for tables in
+      the ReplicatedMergeTree family
+    legacy_item_id: replication.repl_queue
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_replication_repl_queue_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/replication/repl_queue.sql
+    - id: legacy_replication_repl_queue_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/replication/repl_queue.sql
+      derived_from: legacy_replication_repl_queue_1
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.replication_queue
+      legacy_equivalent: replication.repl_queue
+      collector_limits_apply: true
+  legacy.replication.repl_fetches:
+    title: Currently running background fetches (based on system.replicated_fetches)
+    description: Currently running background fetches (based on system.replicated_fetches)
+    legacy_item_id: replication.repl_fetches
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_replication_repl_fetches_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/replication/repl_fetches_old.sql
+      max_ch_version: '20.11'
+    - id: legacy_replication_repl_fetches_2
+      min_ch_version: '20.11'
+      scopes:
+      - cluster
+      sql_file: legacy/replication/repl_fetches_20_11.sql
+    - id: legacy_replication_repl_fetches_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/replication/repl_fetches_old.sql
+      max_ch_version: '20.11'
+      derived_from: legacy_replication_repl_fetches_1
+    - id: legacy_replication_repl_fetches_2_node
+      min_ch_version: '20.11'
+      scopes:
+      - node
+      sql_file: legacy_node/replication/repl_fetches_20_11.sql
+      derived_from: legacy_replication_repl_fetches_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.replicated_fetches
+      legacy_equivalent: replication.repl_fetches
+      collector_limits_apply: true
+  legacy.replication.repl_tables:
+    title: Status of replicated tables (based on system.replicas)
+    description: Status of replicated tables (based on system.replicas)
+    legacy_item_id: replication.repl_tables
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_replication_repl_tables_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/replication/repl_tables_old.sql
+      max_ch_version: '21.10'
+    - id: legacy_replication_repl_tables_2
+      min_ch_version: '21.10'
+      scopes:
+      - cluster
+      sql_file: legacy/replication/repl_tables_21_10.sql
+    - id: legacy_replication_repl_tables_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/replication/repl_tables_old.sql
+      max_ch_version: '21.10'
+      derived_from: legacy_replication_repl_tables_1
+    - id: legacy_replication_repl_tables_2_node
+      min_ch_version: '21.10'
+      scopes:
+      - node
+      sql_file: legacy_node/replication/repl_tables_21_10.sql
+      derived_from: legacy_replication_repl_tables_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.replicas
+      legacy_equivalent: replication.repl_tables
+      collector_limits_apply: true
+  legacy.processes.proc_current:
+    title: Current processes (based on system.processes)
+    description: Current processes (based on system.processes)
+    legacy_item_id: processes.proc_current
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_processes_proc_current_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/processes/proc_current_old.sql
+      max_ch_version: '21.9'
+    - id: legacy_processes_proc_current_2
+      min_ch_version: '21.9'
+      scopes:
+      - cluster
+      sql_file: legacy/processes/proc_current_21_9.sql
+    - id: legacy_processes_proc_current_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/processes/proc_current_old.sql
+      max_ch_version: '21.9'
+      derived_from: legacy_processes_proc_current_1
+    - id: legacy_processes_proc_current_2_node
+      min_ch_version: '21.9'
+      scopes:
+      - node
+      sql_file: legacy_node/processes/proc_current_21_9.sql
+      derived_from: legacy_processes_proc_current_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.processes
+      legacy_equivalent: processes.proc_current
+      collector_limits_apply: true
+  legacy.processes.proc_current_merges:
+    title: Current merges (based on system.merges)
+    description: Current merges (based on system.merges)
+    legacy_item_id: processes.proc_current_merges
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_processes_proc_current_merges_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/processes/proc_current_merges_old.sql
+      max_ch_version: '20.10'
+    - id: legacy_processes_proc_current_merges_2
+      min_ch_version: '20.10'
+      scopes:
+      - cluster
+      sql_file: legacy/processes/proc_current_merges_20_10.sql
+    - id: legacy_processes_proc_current_merges_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/processes/proc_current_merges_old.sql
+      max_ch_version: '20.10'
+      derived_from: legacy_processes_proc_current_merges_1
+    - id: legacy_processes_proc_current_merges_2_node
+      min_ch_version: '20.10'
+      scopes:
+      - node
+      sql_file: legacy_node/processes/proc_current_merges_20_10.sql
+      derived_from: legacy_processes_proc_current_merges_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.merges
+      legacy_equivalent: processes.proc_current_merges
+      collector_limits_apply: true
+  legacy.processes.proc_current_mutations:
+    title: Current mutations (based on system.mutations)
+    description: Current mutations (based on system.mutations)
+    legacy_item_id: processes.proc_current_mutations
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_processes_proc_current_mutations_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/processes/proc_current_mutations.sql
+    - id: legacy_processes_proc_current_mutations_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/processes/proc_current_mutations.sql
+      derived_from: legacy_processes_proc_current_mutations_1
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.mutations
+      legacy_equivalent: processes.proc_current_mutations
+      collector_limits_apply: true
+  legacy.processes.proc_distribution_queue:
+    title: Local files that are in the queue to be sent to the shards (based on system.distribution_queue)
+    description: These local files contain new parts that are created by inserting new data into the Distributed
+      table in asynchronous mode
+    legacy_item_id: processes.proc_distribution_queue
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_processes_proc_distribution_queue_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/processes/proc_distribution_queue_old.sql
+      max_ch_version: '20.5'
+    - id: legacy_processes_proc_distribution_queue_2
+      min_ch_version: '20.5'
+      scopes:
+      - cluster
+      sql_file: legacy/processes/proc_distribution_queue_20_5.sql
+    - id: legacy_processes_proc_distribution_queue_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/processes/proc_distribution_queue_old.sql
+      max_ch_version: '20.5'
+      derived_from: legacy_processes_proc_distribution_queue_1
+    - id: legacy_processes_proc_distribution_queue_2_node
+      min_ch_version: '20.5'
+      scopes:
+      - node
+      sql_file: legacy_node/processes/proc_distribution_queue_20_5.sql
+      derived_from: legacy_processes_proc_distribution_queue_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.distribution_queue
+      legacy_equivalent: processes.proc_distribution_queue
+      collector_limits_apply: true
+  legacy.workload.workload_pools_avg:
+    title: Pools utilization [avg by last week] (based on system.metric_log)
+    description: Pools utilization [avg by last week] (based on system.metric_log)
+    legacy_item_id: workload.workload_pools_avg
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_workload_workload_pools_avg_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_pools_avg_old.sql
+      max_ch_version: '20.4'
+    - id: legacy_workload_workload_pools_avg_2
+      min_ch_version: '20.4'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_pools_avg_20_4.sql
+      max_ch_version: '21.11'
+    - id: legacy_workload_workload_pools_avg_3
+      min_ch_version: '21.11'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_pools_avg_21_11.sql
+    - id: legacy_workload_workload_pools_avg_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_pools_avg_old.sql
+      max_ch_version: '20.4'
+      derived_from: legacy_workload_workload_pools_avg_1
+    - id: legacy_workload_workload_pools_avg_2_node
+      min_ch_version: '20.4'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_pools_avg_20_4.sql
+      max_ch_version: '21.11'
+      derived_from: legacy_workload_workload_pools_avg_2
+    - id: legacy_workload_workload_pools_avg_3_node
+      min_ch_version: '21.11'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_pools_avg_21_11.sql
+      derived_from: legacy_workload_workload_pools_avg_3
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.metric_log
+      legacy_equivalent: workload.workload_pools_avg
+      collector_limits_apply: true
+  legacy.workload.workload_pools_max:
+    title: Pools utilization [max by last week] (based on system.metric_log)
+    description: Pools utilization [max by last week] (based on system.metric_log)
+    legacy_item_id: workload.workload_pools_max
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_workload_workload_pools_max_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_pools_max_old.sql
+      max_ch_version: '20.4'
+    - id: legacy_workload_workload_pools_max_2
+      min_ch_version: '20.4'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_pools_max_20_4.sql
+      max_ch_version: '21.11'
+    - id: legacy_workload_workload_pools_max_3
+      min_ch_version: '21.11'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_pools_max_21_11.sql
+    - id: legacy_workload_workload_pools_max_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_pools_max_old.sql
+      max_ch_version: '20.4'
+      derived_from: legacy_workload_workload_pools_max_1
+    - id: legacy_workload_workload_pools_max_2_node
+      min_ch_version: '20.4'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_pools_max_20_4.sql
+      max_ch_version: '21.11'
+      derived_from: legacy_workload_workload_pools_max_2
+    - id: legacy_workload_workload_pools_max_3_node
+      min_ch_version: '21.11'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_pools_max_21_11.sql
+      derived_from: legacy_workload_workload_pools_max_3
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.metric_log
+      legacy_equivalent: workload.workload_pools_max
+      collector_limits_apply: true
+  legacy.workload.workload_system_metrics:
+    title: System metrics [avg and max by last 3 days] (based on system.asynchronous_metric_log)
+    description: System metrics [avg and max by last 3 days] (based on system.asynchronous_metric_log)
+    legacy_item_id: workload.workload_system_metrics
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_workload_workload_system_metrics_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_system_metrics_old.sql
+      max_ch_version: '20.5'
+    - id: legacy_workload_workload_system_metrics_2
+      min_ch_version: '20.5'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_system_metrics_20_5.sql
+    - id: legacy_workload_workload_system_metrics_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_system_metrics_old.sql
+      max_ch_version: '20.5'
+      derived_from: legacy_workload_workload_system_metrics_1
+    - id: legacy_workload_workload_system_metrics_2_node
+      min_ch_version: '20.5'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_system_metrics_20_5.sql
+      derived_from: legacy_workload_workload_system_metrics_2
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.asynchronous_metric_log
+      legacy_equivalent: workload.workload_system_metrics
+      collector_limits_apply: true
+  legacy.workload.workload_database_metrics:
+    title: Database metrics [by last 3 days] (based on system.metric_log)
+    description: Database metrics [by last 3 days] (based on system.metric_log)
+    legacy_item_id: workload.workload_database_metrics
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_workload_workload_database_metrics_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_database_metrics_old.sql
+      max_ch_version: '20.4'
+    - id: legacy_workload_workload_database_metrics_2
+      min_ch_version: '20.4'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_database_metrics_20_4.sql
+      max_ch_version: '22.2'
+    - id: legacy_workload_workload_database_metrics_3
+      min_ch_version: '22.2'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_database_metrics_22_2.sql
+    - id: legacy_workload_workload_database_metrics_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_database_metrics_old.sql
+      max_ch_version: '20.4'
+      derived_from: legacy_workload_workload_database_metrics_1
+    - id: legacy_workload_workload_database_metrics_2_node
+      min_ch_version: '20.4'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_database_metrics_20_4.sql
+      max_ch_version: '22.2'
+      derived_from: legacy_workload_workload_database_metrics_2
+    - id: legacy_workload_workload_database_metrics_3_node
+      min_ch_version: '22.2'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_database_metrics_22_2.sql
+      derived_from: legacy_workload_workload_database_metrics_3
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.metric_log
+      - system.one
+      legacy_equivalent: workload.workload_database_metrics
+      collector_limits_apply: true
+  legacy.workload.workload_distr_tbls_metrics:
+    title: Distributed tables metrics [by last 3 days] (based on system.metric_log)
+    description: Distributed tables metrics [by last 3 days] (based on system.metric_log)
+    legacy_item_id: workload.workload_distr_tbls_metrics
+    sensitivity: normal
+    timeout_seconds: 15
+    variants:
+    - id: legacy_workload_workload_distr_tbls_metrics_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_distr_tbls_metrics_old.sql
+      max_ch_version: '20.4'
+    - id: legacy_workload_workload_distr_tbls_metrics_2
+      min_ch_version: '20.4'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_distr_tbls_metrics_20_4.sql
+      max_ch_version: '21.3'
+    - id: legacy_workload_workload_distr_tbls_metrics_3
+      min_ch_version: '21.3'
+      scopes:
+      - cluster
+      sql_file: legacy/workload/workload_distr_tbls_metrics_21_3.sql
+    - id: legacy_workload_workload_distr_tbls_metrics_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_distr_tbls_metrics_old.sql
+      max_ch_version: '20.4'
+      derived_from: legacy_workload_workload_distr_tbls_metrics_1
+    - id: legacy_workload_workload_distr_tbls_metrics_2_node
+      min_ch_version: '20.4'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_distr_tbls_metrics_20_4.sql
+      max_ch_version: '21.3'
+      derived_from: legacy_workload_workload_distr_tbls_metrics_2
+    - id: legacy_workload_workload_distr_tbls_metrics_3_node
+      min_ch_version: '21.3'
+      scopes:
+      - node
+      sql_file: legacy_node/workload/workload_distr_tbls_metrics_21_3.sql
+      derived_from: legacy_workload_workload_distr_tbls_metrics_3
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.metric_log
+      - system.one
+      legacy_equivalent: workload.workload_distr_tbls_metrics
+      collector_limits_apply: true
+  legacy.queries.queries_by_hosts_common:
+    title: Common queries stat by hosts
+    description: Common queries stat by hosts
+    legacy_item_id: queries.queries_by_hosts_common
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_queries_queries_by_hosts_common_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_by_hosts_common_old.sql
+      max_ch_version: '20.7'
+    - id: legacy_queries_queries_by_hosts_common_2
+      min_ch_version: '20.7'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_by_hosts_common_20_7.sql
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.query_log
+      legacy_equivalent: queries.queries_by_hosts_common
+      collector_limits_apply: true
+  legacy.queries.queries_top_long:
+    title: Top long queries
+    description: Top long queries
+    legacy_item_id: queries.queries_top_long
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_queries_queries_top_long_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_long_old.sql
+      max_ch_version: '20.7'
+    - id: legacy_queries_queries_top_long_2
+      min_ch_version: '20.7'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_long_20_7.sql
+    - id: legacy_queries_queries_top_long_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_long_old.sql
+      max_ch_version: '20.7'
+      derived_from: legacy_queries_queries_top_long_1
+    - id: legacy_queries_queries_top_long_2_node
+      min_ch_version: '20.7'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_long_20_7.sql
+      derived_from: legacy_queries_queries_top_long_2
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.query_log
+      legacy_equivalent: queries.queries_top_long
+      collector_limits_apply: true
+  legacy.queries.queries_top_long_agg:
+    title: Top long queries aggregated by normalized_query_hash
+    description: Top long queries aggregated by normalized_query_hash
+    legacy_item_id: queries.queries_top_long_agg
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_queries_queries_top_long_agg_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_long_agg_old.sql
+      max_ch_version: '20.4'
+    - id: legacy_queries_queries_top_long_agg_2
+      min_ch_version: '20.4'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_long_agg_20_4.sql
+      max_ch_version: '20.7'
+    - id: legacy_queries_queries_top_long_agg_3
+      min_ch_version: '20.7'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_long_agg_20_7.sql
+      max_ch_version: '21.1'
+    - id: legacy_queries_queries_top_long_agg_4
+      min_ch_version: '21.1'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_long_agg_21_1.sql
+    - id: legacy_queries_queries_top_long_agg_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_long_agg_old.sql
+      max_ch_version: '20.4'
+      derived_from: legacy_queries_queries_top_long_agg_1
+    - id: legacy_queries_queries_top_long_agg_2_node
+      min_ch_version: '20.4'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_long_agg_20_4.sql
+      max_ch_version: '20.7'
+      derived_from: legacy_queries_queries_top_long_agg_2
+    - id: legacy_queries_queries_top_long_agg_3_node
+      min_ch_version: '20.7'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_long_agg_20_7.sql
+      max_ch_version: '21.1'
+      derived_from: legacy_queries_queries_top_long_agg_3
+    - id: legacy_queries_queries_top_long_agg_4_node
+      min_ch_version: '21.1'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_long_agg_21_1.sql
+      derived_from: legacy_queries_queries_top_long_agg_4
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.query_log
+      legacy_equivalent: queries.queries_top_long_agg
+      collector_limits_apply: true
+  legacy.queries.queries_top_result_bytes:
+    title: Top queries by result bytes
+    description: Top queries by result bytes
+    legacy_item_id: queries.queries_top_result_bytes
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_queries_queries_top_result_bytes_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_result_bytes_old.sql
+      max_ch_version: '20.7'
+    - id: legacy_queries_queries_top_result_bytes_2
+      min_ch_version: '20.7'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_result_bytes_20_7.sql
+    - id: legacy_queries_queries_top_result_bytes_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_result_bytes_old.sql
+      max_ch_version: '20.7'
+      derived_from: legacy_queries_queries_top_result_bytes_1
+    - id: legacy_queries_queries_top_result_bytes_2_node
+      min_ch_version: '20.7'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_result_bytes_20_7.sql
+      derived_from: legacy_queries_queries_top_result_bytes_2
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.query_log
+      legacy_equivalent: queries.queries_top_result_bytes
+      collector_limits_apply: true
+  legacy.queries.queries_top_result_bytes_agg:
+    title: Top queries by result bytes aggregated by normalized_query_hash
+    description: Top queries by result bytes aggregated by normalized_query_hash
+    legacy_item_id: queries.queries_top_result_bytes_agg
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_queries_queries_top_result_bytes_agg_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_result_bytes_agg_old.sql
+      max_ch_version: '20.4'
+    - id: legacy_queries_queries_top_result_bytes_agg_2
+      min_ch_version: '20.4'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_result_bytes_agg_20_4.sql
+      max_ch_version: '20.7'
+    - id: legacy_queries_queries_top_result_bytes_agg_3
+      min_ch_version: '20.7'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_result_bytes_agg_20_7.sql
+      max_ch_version: '21.1'
+    - id: legacy_queries_queries_top_result_bytes_agg_4
+      min_ch_version: '21.1'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_result_bytes_agg_21_1.sql
+    - id: legacy_queries_queries_top_result_bytes_agg_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_result_bytes_agg_old.sql
+      max_ch_version: '20.4'
+      derived_from: legacy_queries_queries_top_result_bytes_agg_1
+    - id: legacy_queries_queries_top_result_bytes_agg_2_node
+      min_ch_version: '20.4'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_result_bytes_agg_20_4.sql
+      max_ch_version: '20.7'
+      derived_from: legacy_queries_queries_top_result_bytes_agg_2
+    - id: legacy_queries_queries_top_result_bytes_agg_3_node
+      min_ch_version: '20.7'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_result_bytes_agg_20_7.sql
+      max_ch_version: '21.1'
+      derived_from: legacy_queries_queries_top_result_bytes_agg_3
+    - id: legacy_queries_queries_top_result_bytes_agg_4_node
+      min_ch_version: '21.1'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_result_bytes_agg_21_1.sql
+      derived_from: legacy_queries_queries_top_result_bytes_agg_4
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.query_log
+      legacy_equivalent: queries.queries_top_result_bytes_agg
+      collector_limits_apply: true
+  legacy.queries.queries_top_mem:
+    title: Top queries by memory usage
+    description: Top queries by memory usage
+    legacy_item_id: queries.queries_top_mem
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_queries_queries_top_mem_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_mem_old.sql
+      max_ch_version: '20.7'
+    - id: legacy_queries_queries_top_mem_2
+      min_ch_version: '20.7'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_mem_20_7.sql
+    - id: legacy_queries_queries_top_mem_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_mem_old.sql
+      max_ch_version: '20.7'
+      derived_from: legacy_queries_queries_top_mem_1
+    - id: legacy_queries_queries_top_mem_2_node
+      min_ch_version: '20.7'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_mem_20_7.sql
+      derived_from: legacy_queries_queries_top_mem_2
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.query_log
+      legacy_equivalent: queries.queries_top_mem
+      collector_limits_apply: true
+  legacy.queries.queries_top_mem_agg:
+    title: Top queries by memory usage aggregated by normalized_query_hash
+    description: Top queries by memory usage aggregated by normalized_query_hash
+    legacy_item_id: queries.queries_top_mem_agg
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_queries_queries_top_mem_agg_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_mem_agg_old.sql
+      max_ch_version: '20.4'
+    - id: legacy_queries_queries_top_mem_agg_2
+      min_ch_version: '20.4'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_mem_agg_20_4.sql
+      max_ch_version: '20.7'
+    - id: legacy_queries_queries_top_mem_agg_3
+      min_ch_version: '20.7'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_mem_agg_20_7.sql
+      max_ch_version: '21.1'
+    - id: legacy_queries_queries_top_mem_agg_4
+      min_ch_version: '21.1'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_mem_agg_21_1.sql
+    - id: legacy_queries_queries_top_mem_agg_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_mem_agg_old.sql
+      max_ch_version: '20.4'
+      derived_from: legacy_queries_queries_top_mem_agg_1
+    - id: legacy_queries_queries_top_mem_agg_2_node
+      min_ch_version: '20.4'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_mem_agg_20_4.sql
+      max_ch_version: '20.7'
+      derived_from: legacy_queries_queries_top_mem_agg_2
+    - id: legacy_queries_queries_top_mem_agg_3_node
+      min_ch_version: '20.7'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_mem_agg_20_7.sql
+      max_ch_version: '21.1'
+      derived_from: legacy_queries_queries_top_mem_agg_3
+    - id: legacy_queries_queries_top_mem_agg_4_node
+      min_ch_version: '21.1'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_mem_agg_21_1.sql
+      derived_from: legacy_queries_queries_top_mem_agg_4
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.query_log
+      legacy_equivalent: queries.queries_top_mem_agg
+      collector_limits_apply: true
+  legacy.queries.queries_top_long_profile_events_agg:
+    title: Top long queries with ProfileEvents aggregated by normalized_query_hash and event_name
+    description: Top long queries with ProfileEvents aggregated by normalized_query_hash and event_name
+    legacy_item_id: queries.queries_top_long_profile_events_agg
+    sensitivity: sensitive
+    timeout_seconds: 15
+    variants:
+    - id: legacy_queries_queries_top_long_profile_events_agg_1
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_long_profile_events_agg_old.sql
+      max_ch_version: '20.4'
+    - id: legacy_queries_queries_top_long_profile_events_agg_2
+      min_ch_version: '20.4'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_long_profile_events_agg_20_4.sql
+      max_ch_version: '20.7'
+    - id: legacy_queries_queries_top_long_profile_events_agg_3
+      min_ch_version: '20.7'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_long_profile_events_agg_20_7.sql
+      max_ch_version: '21.1'
+    - id: legacy_queries_queries_top_long_profile_events_agg_4
+      min_ch_version: '21.1'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_long_profile_events_agg_21_1.sql
+      max_ch_version: '25.0'
+    - id: legacy_queries_queries_top_long_profile_events_agg_5
+      min_ch_version: '25.0'
+      scopes:
+      - cluster
+      sql_file: legacy/queries/queries_top_long_profile_events_agg_25_0.sql
+      compatibility_reason: ClickHouse 25 represents ProfileEvents as a Map and requires
+        mapKeys/mapValues expansion.
+    - id: legacy_queries_queries_top_long_profile_events_agg_1_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_long_profile_events_agg_old.sql
+      max_ch_version: '20.4'
+      derived_from: legacy_queries_queries_top_long_profile_events_agg_1
+    - id: legacy_queries_queries_top_long_profile_events_agg_2_node
+      min_ch_version: '20.4'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_long_profile_events_agg_20_4.sql
+      max_ch_version: '20.7'
+      derived_from: legacy_queries_queries_top_long_profile_events_agg_2
+    - id: legacy_queries_queries_top_long_profile_events_agg_3_node
+      min_ch_version: '20.7'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_long_profile_events_agg_20_7.sql
+      max_ch_version: '21.1'
+      derived_from: legacy_queries_queries_top_long_profile_events_agg_3
+    - id: legacy_queries_queries_top_long_profile_events_agg_4_node
+      min_ch_version: '21.1'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_long_profile_events_agg_21_1.sql
+      max_ch_version: '25.0'
+      derived_from: legacy_queries_queries_top_long_profile_events_agg_4
+    - id: legacy_queries_queries_top_long_profile_events_agg_5_node
+      min_ch_version: '25.0'
+      scopes:
+      - node
+      sql_file: legacy_node/queries/queries_top_long_profile_events_agg_25_0.sql
+      derived_from: legacy_queries_queries_top_long_profile_events_agg_5
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.query_log
+      legacy_equivalent: queries.queries_top_long_profile_events_agg
+      collector_limits_apply: true
+  troubleshooting.column_compression:
+    title: Column Compression And Key Flags
+    description: Raw column sizes, compression ratio and primary/sorting-key membership.
+    timeout_seconds: 10
+    variants:
+    - id: troubleshooting_column_compression_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: troubleshooting/column_compression_node.sql
+    - id: troubleshooting_column_compression_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: troubleshooting/column_compression_cluster.sql
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.columns
+      legacy_equivalent: null
+      collector_limits_apply: true
+  troubleshooting.storage_breakdown:
+    title: Storage Breakdown By Partition
+    description: Parts, rows, bytes, primary-index memory and marks by table partition.
+    timeout_seconds: 10
+    variants:
+    - id: troubleshooting_storage_breakdown_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: troubleshooting/storage_breakdown_node.sql
+    - id: troubleshooting_storage_breakdown_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: troubleshooting/storage_breakdown_cluster.sql
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.parts
+      legacy_equivalent: null
+      collector_limits_apply: true
+  troubleshooting.top_cpu_memory:
+    title: Top CPU And Memory Queries
+    description: Aggregates by normalized hash without exposing query text.
+    sensitivity: sensitive
+    timeout_seconds: 10
+    variants:
+    - id: troubleshooting_top_cpu_memory_node
+      min_ch_version: '22.8'
+      scopes:
+      - node
+      sql_file: troubleshooting/top_cpu_memory_node.sql
+    - id: troubleshooting_top_cpu_memory_cluster
+      min_ch_version: '22.8'
+      scopes:
+      - cluster
+      sql_file: troubleshooting/top_cpu_memory_cluster.sql
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.query_log
+      legacy_equivalent: null
+      collector_limits_apply: true
+  troubleshooting.frequent_queries:
+    title: Most Frequent Normalized Queries
+    description: Execution frequency and bounded workload aggregates without query text.
+    sensitivity: sensitive
+    timeout_seconds: 10
+    variants:
+    - id: troubleshooting_frequent_queries_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: troubleshooting/frequent_queries_node.sql
+    - id: troubleshooting_frequent_queries_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: troubleshooting/frequent_queries_cluster.sql
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.query_log
+      legacy_equivalent: null
+      collector_limits_apply: true
+  troubleshooting.part_log_errors:
+    title: Recent Part Log Errors
+    description: Bounded errors from optional system.part_log.
+    sensitivity: sensitive
+    optional: true
+    requires:
+      tables:
+      - system.part_log
+    timeout_seconds: 10
+    variants:
+    - id: troubleshooting_part_log_errors_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: troubleshooting/part_log_errors_node.sql
+    - id: troubleshooting_part_log_errors_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: troubleshooting/part_log_errors_cluster.sql
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.part_log
+      legacy_equivalent: null
+      collector_limits_apply: true
+  troubleshooting.partition_part_counts:
+    title: Active Parts By Partition
+    description: Raw part counts with an explicit advisory threshold flag.
+    timeout_seconds: 10
+    variants:
+    - id: troubleshooting_partition_part_counts_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: troubleshooting/partition_part_counts_node.sql
+    - id: troubleshooting_partition_part_counts_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: troubleshooting/partition_part_counts_cluster.sql
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.parts
+      legacy_equivalent: null
+      collector_limits_apply: true
+  troubleshooting.merges_eta:
+    title: Merges In Progress With ETA
+    description: Current merges with division-safe estimated remaining time.
+    timeout_seconds: 10
+    variants:
+    - id: troubleshooting_merges_eta_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: troubleshooting/merges_eta_node.sql
+    - id: troubleshooting_merges_eta_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: troubleshooting/merges_eta_cluster.sql
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.merges
+      legacy_equivalent: null
+      collector_limits_apply: true
+  troubleshooting.replication_summary:
+    title: Replication Health Summary
+    description: Queue, delay and active-replica state for local replicated tables.
+    timeout_seconds: 10
+    variants:
+    - id: troubleshooting_replication_summary_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: troubleshooting/replication_summary_node.sql
+    - id: troubleshooting_replication_summary_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: troubleshooting/replication_summary_cluster.sql
+    collection_scope: once
+    cost_class: high
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.replicas
+      legacy_equivalent: null
+      collector_limits_apply: true
+  metrics.events:
+    title: ClickHouse Event Counters
+    description: Narrow cumulative counters sampled for rate charts.
+    timeout_seconds: 5
+    variants:
+    - id: metrics_events_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: metrics/events_node.sql
+    - id: metrics_events_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: metrics/events_cluster.sql
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.events
+      legacy_equivalent: null
+      collector_limits_apply: true
+  metrics.gauges:
+    title: ClickHouse Current Metrics
+    description: Narrow point-in-time gauges sampled for activity charts.
+    timeout_seconds: 5
+    variants:
+    - id: metrics_gauges_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: metrics/gauges_node.sql
+    - id: metrics_gauges_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: metrics/gauges_cluster.sql
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.metrics
+      legacy_equivalent: null
+      collector_limits_apply: true
+  metrics.part_creation:
+    title: Part Creation Counter
+    description: Optional cumulative NewPart count sampled from system.part_log.
+    timeout_seconds: 5
+    optional: true
+    requires:
+      tables:
+      - system.part_log
+    variants:
+    - id: metrics_part_creation_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: metrics/part_creation_node.sql
+    - id: metrics_part_creation_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: metrics/part_creation_cluster.sql
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.part_log
+      legacy_equivalent: null
+      collector_limits_apply: true
+  metrics.replication:
+    title: ClickHouse Replication Gauges
+    description: Replica availability, queue and delay sampled over the window.
+    timeout_seconds: 5
+    variants:
+    - id: metrics_replication_node
+      min_ch_version: '20.3'
+      scopes:
+      - node
+      sql_file: metrics/replication_node.sql
+    - id: metrics_replication_cluster
+      min_ch_version: '20.3'
+      scopes:
+      - cluster
+      sql_file: metrics/replication_cluster.sql
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+    semantic_contract:
+      source_tables:
+      - system.replicas
+      legacy_equivalent: null
+      collector_limits_apply: true

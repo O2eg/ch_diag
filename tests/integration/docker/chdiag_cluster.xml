@@ -1,0 +1,12 @@
+<clickhouse>
+  <remote_servers>
+    <chdiag_test>
+      <shard>
+        <replica>
+          <host>127.0.0.1</host>
+          <port>9000</port>
+        </replica>
+      </shard>
+    </chdiag_test>
+  </remote_servers>
+</clickhouse>

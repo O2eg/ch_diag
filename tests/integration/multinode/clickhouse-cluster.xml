@@ -1,0 +1,37 @@
+<clickhouse>
+  <listen_host>0.0.0.0</listen_host>
+
+  <remote_servers>
+    <chdiag_cluster>
+      <shard>
+        <internal_replication>true</internal_replication>
+        <replica>
+          <host>node1</host>
+          <port>9000</port>
+        </replica>
+        <replica>
+          <host>node2</host>
+          <port>9000</port>
+        </replica>
+      </shard>
+    </chdiag_cluster>
+  </remote_servers>
+
+  <zookeeper>
+    <node>
+      <host>keeper</host>
+      <port>9181</port>
+    </node>
+  </zookeeper>
+
+  <distributed_ddl>
+    <path>/clickhouse/task_queue/ddl</path>
+  </distributed_ddl>
+
+  <part_log replace="replace">
+    <database>system</database>
+    <table>part_log</table>
+    <partition_by>toYYYYMM(event_date)</partition_by>
+    <flush_interval_milliseconds>500</flush_interval_milliseconds>
+  </part_log>
+</clickhouse>

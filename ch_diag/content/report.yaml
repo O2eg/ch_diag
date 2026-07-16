@@ -1,0 +1,619 @@
+report:
+  id: ch_diag
+  title: ClickHouse Diagnostic Report
+  description: Read-only ClickHouse and operating-system diagnostics.
+  schema_version: 5
+  allowed_item_tags:
+  - Activity
+  - CPU
+  - Cluster
+  - Configuration
+  - Databases
+  - Disk
+  - Errors
+  - Hardware
+  - I/O
+  - Memory
+  - Network
+  - Queries
+  - Replication
+  - Security
+  - Snapshots
+  - Storage
+  - Tables
+runtime_policy:
+  default_sql_timeout_seconds: 5
+  database_workers: 4
+  default_shell_timeout_seconds: 2
+  max_result_rows: 10000
+  max_result_bytes: 67108864
+  max_artifact_bytes: 134217728
+  max_snapshot_count: 360
+  max_cluster_targets: 32
+  max_series_per_chart: 200
+  max_points_per_series: 2000
+  max_total_chart_points: 200000
+  fail_fast: false
+defaults:
+  numeric_locale: en-US
+  table:
+    page_size: 25
+  item:
+    state: collapsed
+  section:
+    state: expanded
+sections:
+  overview:
+    title: Overview
+    description: Connected ClickHouse server and topology.
+    items:
+      server:
+        query: overview.server
+        tags:
+        - Configuration
+        - Cluster
+        state: expanded
+      clusters:
+        query: overview.clusters
+        tags:
+        - Cluster
+        - Configuration
+        state: expanded
+      changed_settings:
+        query: configuration.changed_settings
+        tags:
+        - Configuration
+        state: expanded
+  operating_system:
+    title: Operating System
+    description: Collector host in local mode or SSH target in remote mode.
+    state: collapsed
+    items:
+      os_release:
+        script: os.os_release
+        tags:
+        - Configuration
+        state: expanded
+      kernel_version:
+        script: os.kernel_version
+        tags:
+        - Hardware
+        - Configuration
+        state: expanded
+      memory_info:
+        script: os.memory_info
+        tags:
+        - Memory
+        state: expanded
+      cpu_info:
+        script: os.cpu_info
+        tags:
+        - CPU
+        - Hardware
+        state: expanded
+      disk_usage:
+        script: os.disk_usage
+        tags:
+        - Disk
+        - Storage
+        state: expanded
+      total_ram:
+        script: os.total_ram
+        tags: [Memory, Hardware]
+        state: collapsed
+      fstab:
+        script: os.fstab
+        tags: [Disk, Configuration]
+        state: collapsed
+      mounts:
+        script: os.mounts
+        tags: [Disk, Storage]
+        state: collapsed
+      network_addresses:
+        script: os.network_addresses
+        tags: [Network, Configuration]
+        state: collapsed
+      sysctl_vm:
+        script: os.sysctl_vm
+        tags: [Memory, Configuration]
+        state: collapsed
+      sysctl_tcp:
+        script: os.sysctl_tcp
+        tags: [Network, Configuration]
+        state: collapsed
+      sysctl_udp:
+        script: os.sysctl_udp
+        tags: [Network, Configuration]
+        state: collapsed
+      lshw_system:
+        script: os.lshw_system
+        tags: [Hardware]
+        state: collapsed
+      lshw_bus:
+        script: os.lshw_bus
+        tags: [Hardware]
+        state: collapsed
+      lshw_memory:
+        script: os.lshw_memory
+        tags: [Hardware, Memory]
+        state: collapsed
+      lshw_processor:
+        script: os.lshw_processor
+        tags: [Hardware, CPU]
+        state: collapsed
+      lshw_bridge:
+        script: os.lshw_bridge
+        tags: [Hardware]
+        state: collapsed
+      lshw_display:
+        script: os.lshw_display
+        tags: [Hardware]
+        state: collapsed
+      lshw_network:
+        script: os.lshw_network
+        tags: [Hardware, Network]
+        state: collapsed
+      lshw_storage:
+        script: os.lshw_storage
+        tags: [Hardware, Storage]
+        state: collapsed
+      lshw_disk:
+        script: os.lshw_disk
+        tags: [Hardware, Disk]
+        state: collapsed
+      lshw_volume:
+        script: os.lshw_volume
+        tags: [Hardware, Disk]
+        state: collapsed
+      lshw_input:
+        script: os.lshw_input
+        tags: [Hardware]
+        state: collapsed
+      lshw_communication:
+        script: os.lshw_communication
+        tags: [Hardware, Network]
+        state: collapsed
+      lshw_multimedia:
+        script: os.lshw_multimedia
+        tags: [Hardware]
+        state: collapsed
+      lshw_power:
+        script: os.lshw_power
+        tags: [Hardware]
+        state: collapsed
+      lshw_generic:
+        script: os.lshw_generic
+        tags: [Hardware]
+        state: collapsed
+  clickhouse_host:
+    title: ClickHouse Host Process
+    description: OS-level details for the ClickHouse server selected by the connected native port.
+    state: collapsed
+    items:
+      process_tree:
+        script: clickhouse.process_tree
+        tags: [Activity, Configuration]
+        state: expanded
+      linked_libraries:
+        script: clickhouse.linked_libraries
+        tags: [Configuration, Security]
+        state: expanded
+      process_context:
+        script: clickhouse.process_context
+        tags: [Configuration, Security]
+        state: expanded
+      config_permissions:
+        script: clickhouse.config_permissions
+        tags: [Configuration, Security]
+        state: expanded
+  clickhouse_system:
+    title: ClickHouse System
+    description: Common info about current cluster
+    state: expanded
+    items:
+      system_common:
+        query: legacy.system.system_common
+        tags: &id001
+        - Configuration
+        - Cluster
+        state: expanded
+      system_clusters:
+        query: legacy.system.system_clusters
+        tags: *id001
+        state: expanded
+      system_macros:
+        query: legacy.system.system_macros
+        tags: *id001
+        state: expanded
+      system_databases:
+        query: legacy.system.system_databases
+        tags: *id001
+        state: expanded
+      system_databases_ext:
+        query: legacy.system.system_databases_ext
+        tags: *id001
+        state: collapsed
+      system_storage_policies:
+        query: legacy.system.system_storage_policies
+        tags: *id001
+        state: collapsed
+      system_disks:
+        query: legacy.system.system_disks
+        tags: *id001
+        state: collapsed
+      system_settings:
+        query: legacy.system.system_settings
+        tags: *id001
+        state: collapsed
+      system_merge_tree_settings:
+        query: legacy.system.system_merge_tree_settings
+        tags: *id001
+        state: collapsed
+      system_events:
+        query: legacy.system.system_events
+        tags: *id001
+        state: collapsed
+  errors:
+    title: Errors
+    description: ''
+    state: expanded
+    items:
+      errors_top:
+        query: legacy.errors.errors_top
+        tags: &id002
+        - Errors
+        state: expanded
+      errors_last:
+        query: legacy.errors.errors_last
+        tags: *id002
+        state: expanded
+      errors_mutations:
+        query: legacy.errors.errors_mutations
+        tags: *id002
+        state: expanded
+      errors_stat:
+        query: legacy.errors.errors_stat
+        tags: *id002
+        state: expanded
+      errors_queries:
+        query: legacy.errors.errors_queries
+        tags: *id002
+        state: collapsed
+      errors_dictionaries:
+        query: legacy.errors.errors_dictionaries
+        tags: *id002
+        state: collapsed
+      errors_distribution_queue:
+        query: legacy.errors.errors_distribution_queue
+        tags: *id002
+        state: collapsed
+      errors_replicas:
+        query: legacy.errors.errors_replicas
+        tags: *id002
+        state: collapsed
+      errors_replication_queue:
+        query: legacy.errors.errors_replication_queue
+        tags: *id002
+        state: collapsed
+      errors_distributed_ddl_queue:
+        query: legacy.errors.errors_distributed_ddl_queue
+        tags: *id002
+        state: collapsed
+      errors_keeper:
+        query: legacy.errors.errors_keeper
+        tags: *id002
+        state: collapsed
+  databases_objects:
+    title: Databases And Objects
+    description: ''
+    state: expanded
+    items:
+      db_dictionaries:
+        query: legacy.db.db_dictionaries
+        tags: &id003
+        - Databases
+        - Tables
+        - Storage
+        state: expanded
+      db_distr_by_hosts:
+        query: legacy.db.db_distr_by_hosts
+        tags: *id003
+        state: expanded
+      db_distr_engines_by_hosts:
+        query: legacy.db.db_distr_engines_by_hosts
+        tags: *id003
+        state: expanded
+      db_stats:
+        query: legacy.db.db_stats
+        tags: *id003
+        state: expanded
+      db_tbl_engines_stat:
+        query: legacy.db.db_tbl_engines_stat
+        tags: *id003
+        state: collapsed
+      db_distr_tbl_engines:
+        query: legacy.db.db_distr_tbl_engines
+        tags: *id003
+        state: collapsed
+      db_distr_tbl_engines_by_hosts:
+        query: legacy.db.db_distr_tbl_engines_by_hosts
+        tags: *id003
+        state: collapsed
+      db_top_tables:
+        query: legacy.db.db_top_tables
+        tags: *id003
+        state: collapsed
+      db_data_skipping_indices:
+        query: legacy.db.db_data_skipping_indices
+        tags: *id003
+        state: collapsed
+      db_asymmetric_tbls:
+        query: legacy.db.db_asymmetric_tbls
+        tags: *id003
+        state: collapsed
+      db_symmetric_tbls:
+        query: legacy.db.db_symmetric_tbls
+        tags: *id003
+        state: collapsed
+      db_tbls_with_diff_ddls:
+        query: legacy.db.db_tbls_with_diff_ddls
+        tags: *id003
+        state: collapsed
+      db_detached_parts:
+        query: legacy.db.db_detached_parts
+        tags: *id003
+        state: collapsed
+      db_parts_stat:
+        query: legacy.db.db_parts_stat
+        tags: *id003
+        state: collapsed
+  replication:
+    title: Replication
+    description: ''
+    state: expanded
+    items:
+      repl_queue:
+        query: legacy.replication.repl_queue
+        tags: &id004
+        - Replication
+        - Cluster
+        state: expanded
+      repl_fetches:
+        query: legacy.replication.repl_fetches
+        tags: *id004
+        state: expanded
+      repl_tables:
+        query: legacy.replication.repl_tables
+        tags: *id004
+        state: expanded
+  activity:
+    title: Current Activity
+    description: ''
+    state: expanded
+    items:
+      proc_current:
+        query: legacy.processes.proc_current
+        tags: &id005
+        - Activity
+        - Queries
+        state: expanded
+      proc_current_merges:
+        query: legacy.processes.proc_current_merges
+        tags: *id005
+        state: expanded
+      proc_current_mutations:
+        query: legacy.processes.proc_current_mutations
+        tags: *id005
+        state: expanded
+      proc_distribution_queue:
+        query: legacy.processes.proc_distribution_queue
+        tags: *id005
+        state: expanded
+  historical_workload:
+    title: Historical Workload
+    description: ''
+    state: expanded
+    items:
+      workload_pools_avg:
+        query: legacy.workload.workload_pools_avg
+        tags: &id006
+        - Activity
+        - Queries
+        state: expanded
+      workload_pools_max:
+        query: legacy.workload.workload_pools_max
+        tags: *id006
+        state: expanded
+      workload_system_metrics:
+        query: legacy.workload.workload_system_metrics
+        tags: *id006
+        state: expanded
+      workload_database_metrics:
+        query: legacy.workload.workload_database_metrics
+        tags: *id006
+        state: expanded
+      workload_distr_tbls_metrics:
+        query: legacy.workload.workload_distr_tbls_metrics
+        tags: *id006
+        state: collapsed
+  query_workload:
+    title: Query Workload
+    description: Some description
+    state: expanded
+    items:
+      queries_by_hosts_common:
+        query: legacy.queries.queries_by_hosts_common
+        tags: &id007
+        - Queries
+        state: expanded
+      queries_top_long:
+        query: legacy.queries.queries_top_long
+        tags: *id007
+        state: expanded
+      queries_top_long_agg:
+        query: legacy.queries.queries_top_long_agg
+        tags: *id007
+        state: expanded
+      queries_top_result_bytes:
+        query: legacy.queries.queries_top_result_bytes
+        tags: *id007
+        state: expanded
+      queries_top_result_bytes_agg:
+        query: legacy.queries.queries_top_result_bytes_agg
+        tags: *id007
+        state: collapsed
+      queries_top_mem:
+        query: legacy.queries.queries_top_mem
+        tags: *id007
+        state: collapsed
+      queries_top_mem_agg:
+        query: legacy.queries.queries_top_mem_agg
+        tags: *id007
+        state: collapsed
+      queries_top_long_profile_events_agg:
+        query: legacy.queries.queries_top_long_profile_events_agg
+        tags: *id007
+        state: collapsed
+  dba_troubleshooting:
+    title: DBA Troubleshooting
+    description: Bounded diagnostics adapted from official ClickHouse troubleshooting guidance.
+    state: expanded
+    items:
+      column_compression:
+        query: troubleshooting.column_compression
+        tags: [Tables, Storage]
+        state: expanded
+      storage_breakdown:
+        query: troubleshooting.storage_breakdown
+        tags: [Tables, Storage, Disk]
+        state: expanded
+      top_cpu_memory:
+        query: troubleshooting.top_cpu_memory
+        tags: [Queries, CPU, Memory]
+        state: expanded
+      frequent_queries:
+        query: troubleshooting.frequent_queries
+        tags: [Queries, Activity]
+        state: expanded
+      part_log_errors:
+        query: troubleshooting.part_log_errors
+        tags: [Errors, Tables]
+        state: collapsed
+      partition_part_counts:
+        query: troubleshooting.partition_part_counts
+        tags: [Tables, Storage]
+        state: expanded
+      merges_eta:
+        query: troubleshooting.merges_eta
+        tags: [Activity, Storage]
+        state: collapsed
+      replication_summary:
+        query: troubleshooting.replication_summary
+        tags: [Replication, Cluster]
+        state: collapsed
+  snapshot_charts_os:
+    title: Snapshot Charts OS
+    description: Linux charts from the local collector or SSH target during snapshots mode.
+    state: collapsed
+    items:
+      os_cpu_utilization:
+        metric: os.cpu_utilization
+        tags: [CPU, Snapshots]
+        state: expanded
+      os_cpu_load:
+        metric: os.cpu_load
+        tags: [CPU, Snapshots]
+        state: expanded
+      os_memory_usage:
+        metric: os.memory_usage
+        tags: [Memory, Snapshots]
+        state: expanded
+      os_memory_pressure:
+        metric: os.memory_pressure
+        tags: [Memory, Snapshots]
+        state: expanded
+      os_disk_read_throughput:
+        metric: os.disk_read_throughput
+        tags: [Disk, I/O, Snapshots]
+        state: collapsed
+      os_disk_write_throughput:
+        metric: os.disk_write_throughput
+        tags: [Disk, I/O, Snapshots]
+        state: collapsed
+      os_disk_iops:
+        metric: os.disk_iops
+        tags: [Disk, I/O, Snapshots]
+        state: collapsed
+      os_disk_utilization:
+        metric: os.disk_utilization
+        tags: [Disk, Snapshots]
+        state: expanded
+      os_disk_latency:
+        metric: os.disk_latency
+        tags: [Disk, I/O, Snapshots]
+        state: collapsed
+      os_network_receive:
+        metric: os.network_receive_throughput
+        tags: [Network, Snapshots]
+        state: collapsed
+      os_network_transmit:
+        metric: os.network_transmit_throughput
+        tags: [Network, Snapshots]
+        state: collapsed
+      os_network_packets:
+        metric: os.network_packets
+        tags: [Network, Snapshots]
+        state: collapsed
+  snapshot_charts_clickhouse:
+    title: Snapshot Charts ClickHouse
+    description: ClickHouse counter rates and point-in-time gauges sampled over the window.
+    state: collapsed
+    items:
+      process_cpu:
+        metric: clickhouse.process_cpu
+        tags: [CPU, Activity, Snapshots]
+        state: expanded
+      process_memory:
+        metric: clickhouse.process_memory
+        tags: [Memory, Activity, Snapshots]
+        state: expanded
+      process_io:
+        metric: clickhouse.process_io
+        tags: [I/O, Activity, Snapshots]
+        state: collapsed
+      query_rate:
+        metric: clickhouse.query_rate
+        tags: [Queries, Activity, Snapshots]
+        state: expanded
+      row_rate:
+        metric: clickhouse.row_rate
+        tags: [Activity, Tables, Snapshots]
+        state: expanded
+      byte_rate:
+        metric: clickhouse.byte_rate
+        tags: [Activity, I/O, Snapshots]
+        state: expanded
+      activity:
+        metric: clickhouse.activity
+        tags: [Activity, Queries, Snapshots]
+        state: expanded
+      memory:
+        metric: clickhouse.memory
+        tags: [Memory, Activity, Snapshots]
+        state: expanded
+      replication_activity:
+        metric: clickhouse.replication_activity
+        tags: [Replication, Activity, Snapshots]
+        state: collapsed
+      replication_queue:
+        metric: clickhouse.replication_queue
+        tags: [Replication, Snapshots]
+        state: collapsed
+      part_creation_rate:
+        metric: clickhouse.part_creation_rate
+        tags: [Tables, Activity, Snapshots]
+        state: collapsed
+      keeper_events:
+        metric: clickhouse.keeper_events
+        tags: [Replication, Errors, Snapshots]
+        state: collapsed

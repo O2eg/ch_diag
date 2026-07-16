@@ -1,0 +1,404 @@
+script_catalog:
+  schema_version: 5
+  script_root: scripts
+  defaults:
+    output: plain_text
+    timeout_seconds: 3
+scripts:
+  clickhouse.process_tree:
+    title: ClickHouse Server Process Tree
+    description: Main ClickHouse server selected by the connected native port and its child processes.
+    file: clickhouse/process_tree.sh
+    library: lib/clickhouse_process.sh
+    timeout_seconds: 3
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  clickhouse.linked_libraries:
+    title: ClickHouse Server Linked Libraries
+    description: One-shot ldd output for the executable of the ClickHouse server bound to the connected
+      native port.
+    file: clickhouse/linked_libraries.sh
+    library: lib/clickhouse_process.sh
+    timeout_seconds: 5
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  clickhouse.process_context:
+    title: ClickHouse Process Limits And Security Context
+    description: Command, executable, resource limits and kernel security state for the selected ClickHouse
+      server.
+    file: clickhouse/process_context.sh
+    library: lib/clickhouse_process.sh
+    timeout_seconds: 3
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  clickhouse.config_permissions:
+    title: ClickHouse Configuration And Data Path Permissions
+    description: Ownership and modes for the connected server configuration and conventional
+      data/log paths, with world-writable paths marked explicitly.
+    file: clickhouse/config_permissions.sh
+    library: lib/clickhouse_process.sh
+    timeout_seconds: 3
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  os.kernel_version:
+    title: Kernel And Architecture
+    description: uname output from the collected host.
+    file: os/uname_a.sh
+    timeout_seconds: 2
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  os.os_release:
+    title: OS Distribution
+    description: Distribution identification from /etc/os-release.
+    file: os/etc_os_release.sh
+    timeout_seconds: 2
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  os.memory_info:
+    title: Memory Information
+    description: Selected procfs memory counters normalized to exact bytes or counts.
+    file: os/sys_memory_total.sh
+    output: table_json
+    timeout_seconds: 2
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.total_ram:
+    title: Total RAM Capacity
+    description: Exact total host RAM bytes from procfs.
+    file: os/total_ram.sh
+    output: table_json
+    timeout_seconds: 2
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.cpu_info:
+    title: CPU Information
+    description: CPU architecture and topology from lscpu.
+    file: os/cpu_info.sh
+    timeout_seconds: 2
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  os.disk_usage:
+    title: Filesystem Usage
+    description: Filesystem capacity in exact bytes and utilization percent.
+    file: os/df_h.sh
+    output: table_json
+    timeout_seconds: 3
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.fstab:
+    title: Filesystem Configuration
+    description: Local /etc/fstab content.
+    file: os/etc_fstab.sh
+    timeout_seconds: 2
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  os.mounts:
+    title: Mounted Filesystems
+    description: Current filesystem mounts.
+    file: os/mount.sh
+    timeout_seconds: 3
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  os.network_addresses:
+    title: Network Addresses And Hosts
+    description: Network addresses and hostname mappings.
+    file: os/ip_br_addr.sh
+    timeout_seconds: 3
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  os.sysctl_vm:
+    title: Kernel VM Parameters
+    description: Kernel virtual-memory parameters from sysctl.
+    file: os/sysctl_vm.sh
+    timeout_seconds: 3
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  os.sysctl_tcp:
+    title: Kernel TCP Parameters
+    description: Kernel IPv4 TCP parameters from sysctl.
+    file: os/sysctl_net_ipv4_tcp.sh
+    timeout_seconds: 3
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  os.sysctl_udp:
+    title: Kernel UDP Parameters
+    description: Kernel IPv4 UDP parameters from sysctl.
+    file: os/sysctl_net_ipv4_udp.sh
+    timeout_seconds: 3
+    collection_scope: once
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: plain_text
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_system:
+    title: System Components
+    description: Hardware inventory from lshw class system.
+    file: os/lshw_system.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_bus:
+    title: Buses And Interfaces
+    description: Hardware inventory from lshw class bus.
+    file: os/lshw_bus.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_memory:
+    title: System Memory Hardware
+    description: Hardware inventory from lshw class memory.
+    file: os/lshw_memory.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_processor:
+    title: Processor Hardware
+    description: Hardware inventory from lshw class processor.
+    file: os/lshw_processor.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_bridge:
+    title: Bridges And Controllers
+    description: Hardware inventory from lshw class bridge.
+    file: os/lshw_bridge.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_display:
+    title: Graphics Adapters
+    description: Hardware inventory from lshw class display.
+    file: os/lshw_display.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_network:
+    title: Network Interfaces
+    description: Hardware inventory from lshw class network.
+    file: os/lshw_network.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_storage:
+    title: Storage Controllers
+    description: Hardware inventory from lshw class storage.
+    file: os/lshw_storage.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_disk:
+    title: Disks And SSDs
+    description: Hardware inventory from lshw class disk.
+    file: os/lshw_disk.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_volume:
+    title: Disk Partitions And Volumes
+    description: Hardware inventory from lshw class volume.
+    file: os/lshw_volume.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_input:
+    title: Input Devices
+    description: Hardware inventory from lshw class input.
+    file: os/lshw_input.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_communication:
+    title: Communication Devices
+    description: Hardware inventory from lshw class communication.
+    file: os/lshw_communication.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_multimedia:
+    title: Multimedia Devices
+    description: Hardware inventory from lshw class multimedia.
+    file: os/lshw_multimedia.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_power:
+    title: Power Components
+    description: Hardware inventory from lshw class power.
+    file: os/lshw_power.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  os.lshw_generic:
+    title: Generic Devices
+    description: Hardware inventory from lshw class generic.
+    file: os/lshw_generic.sh
+    output: table_json
+    timeout_seconds: 8
+    collection_scope: once
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true

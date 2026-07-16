@@ -1,0 +1,636 @@
+metric_catalog:
+  schema_version: 5
+  defaults:
+    mode: snapshots
+    x: snapshot_time
+sampler_providers:
+  linux_os:
+    implementation: ch_diag.samplers
+    config:
+      proc_script: samplers/linux_proc.sh
+      iostat_script: samplers/linux_iostat.sh
+      process_script: samplers/clickhouse_process.sh
+      process_library: lib/clickhouse_process.sh
+    outputs:
+      os.cpu:
+        collection_scope: every_snapshot
+        source_file: samplers/linux_proc.sh
+      os.memory:
+        collection_scope: every_snapshot
+        source_file: samplers/linux_proc.sh
+      os.disk:
+        collection_scope: every_snapshot
+        source_file: samplers/linux_proc.sh
+      os.network:
+        collection_scope: every_snapshot
+        source_file: samplers/linux_proc.sh
+      clickhouse.process:
+        collection_scope: every_snapshot
+        source_file: samplers/clickhouse_process.sh
+metrics:
+  clickhouse.process_cpu:
+    title: ClickHouse Server Process CPU
+    source_sampler: clickhouse.process
+    series:
+    - name: process CPU
+      value_ref: cpu_pct
+      transform: gauge
+      unit: '%'
+    chart:
+      kind: area
+      unit: '%'
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.process_memory:
+    title: ClickHouse Server Process Resident Memory
+    source_sampler: clickhouse.process
+    series:
+    - name: resident memory
+      value_ref: rss_bytes
+      transform: gauge
+      unit: bytes
+    chart:
+      kind: area
+      unit: bytes
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.process_io:
+    title: ClickHouse Server Process I/O
+    source_sampler: clickhouse.process
+    requires_fields:
+    - read_bytes_per_sec
+    - write_bytes_per_sec
+    series:
+    - name: read
+      value_ref: read_bytes_per_sec
+      transform: gauge
+      unit: bytes/s
+    - name: write
+      value_ref: write_bytes_per_sec
+      transform: gauge
+      unit: bytes/s
+    chart:
+      kind: stacked_area
+      unit: bytes/s
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.cpu_utilization:
+    title: CPU Utilization
+    source_sampler: os.cpu
+    series:
+    - name: user
+      value_ref: user_pct
+      transform: gauge
+      unit: '%'
+      color: '#93d083'
+    - name: system
+      value_ref: system_pct
+      transform: gauge
+      unit: '%'
+      color: '#e98996'
+    - name: iowait
+      value_ref: iowait_pct
+      transform: gauge
+      unit: '%'
+      color: '#efd05f'
+    - name: steal
+      value_ref: steal_pct
+      transform: gauge
+      unit: '%'
+      color: '#e7a764'
+    - name: idle
+      value_ref: idle_pct
+      transform: gauge
+      unit: '%'
+      color: '#aeb4bd'
+    chart:
+      kind: stacked_area
+      series_order: configured
+      unit: '%'
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.cpu_load:
+    title: CPU Load Average
+    source_sampler: os.cpu
+    series:
+    - name: load1
+      value_ref: load1
+      transform: gauge
+      unit: load
+    - name: load5
+      value_ref: load5
+      transform: gauge
+      unit: load
+    - name: load15
+      value_ref: load15
+      transform: gauge
+      unit: load
+    chart:
+      kind: line
+      unit: load
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.memory_usage:
+    title: Memory Usage
+    source_sampler: os.memory
+    series:
+    - name: Application memory
+      value_ref: application_bytes
+      transform: gauge
+      unit: bytes
+      color: '#93d083'
+    - name: Page cache
+      value_ref: cached_bytes
+      transform: gauge
+      unit: bytes
+      color: '#b38ee8'
+    - name: Shared memory
+      value_ref: shared_bytes
+      transform: gauge
+      unit: bytes
+      color: '#84c8e7'
+    - name: Buffers
+      value_ref: buffers_bytes
+      transform: gauge
+      unit: bytes
+      color: '#e7a764'
+    - name: Slab reclaimable
+      value_ref: slab_reclaimable_bytes
+      transform: gauge
+      unit: bytes
+      color: '#efd05f'
+    - name: Slab unreclaimable
+      value_ref: slab_unreclaimable_bytes
+      transform: gauge
+      unit: bytes
+      color: '#d6b45d'
+    - name: Page tables
+      value_ref: page_tables_bytes
+      transform: gauge
+      unit: bytes
+      color: '#8f9ae8'
+    - name: Kernel stack
+      value_ref: kernel_stack_bytes
+      transform: gauge
+      unit: bytes
+      color: '#aeb4bd'
+    - name: Swap cache
+      value_ref: swap_cached_bytes
+      transform: gauge
+      unit: bytes
+      color: '#e98996'
+    - name: Free
+      value_ref: free_bytes
+      transform: gauge
+      unit: bytes
+      color: '#c9ea5f'
+    chart:
+      kind: stacked_area
+      series_order: configured
+      unit: bytes
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.memory_pressure:
+    title: RAM And Swap Usage
+    source_sampler: os.memory
+    series:
+    - name: RAM used
+      value_ref: used_pct
+      transform: gauge
+      unit: '%'
+    - name: swap used
+      value_ref: swap_used_pct
+      transform: gauge
+      unit: '%'
+    chart:
+      kind: line
+      unit: '%'
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.disk_read_throughput:
+    title: Disk Read Throughput
+    source_sampler: os.disk
+    partition_by:
+    - device
+    series:
+    - name: read
+      value_ref: read_bytes_per_sec
+      transform: gauge
+      unit: bytes/s
+    chart:
+      kind: area
+      unit: bytes/s
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.disk_write_throughput:
+    title: Disk Write Throughput
+    source_sampler: os.disk
+    partition_by:
+    - device
+    series:
+    - name: write
+      value_ref: write_bytes_per_sec
+      transform: gauge
+      unit: bytes/s
+    chart:
+      kind: area
+      unit: bytes/s
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.disk_iops:
+    title: Disk IOPS
+    source_sampler: os.disk
+    partition_by:
+    - device
+    series:
+    - name: read iops
+      value_ref: read_iops
+      transform: gauge
+      unit: iops
+    - name: write iops
+      value_ref: write_iops
+      transform: gauge
+      unit: iops
+    chart:
+      kind: stacked_area
+      unit: iops
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.disk_utilization:
+    title: Disk Utilization
+    source_sampler: os.disk
+    partition_by:
+    - device
+    series:
+    - name: util
+      value_ref: util_pct
+      transform: gauge
+      unit: '%'
+    chart:
+      kind: area
+      unit: '%'
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.disk_latency:
+    title: Disk Latency
+    source_sampler: os.disk
+    partition_by:
+    - device
+    series:
+    - name: await
+      value_ref: await_ms
+      transform: gauge
+      unit: ms
+    - name: read await
+      value_ref: r_await_ms
+      transform: gauge
+      unit: ms
+    - name: write await
+      value_ref: w_await_ms
+      transform: gauge
+      unit: ms
+    chart:
+      kind: line
+      unit: ms
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.network_receive_throughput:
+    title: Network Receive Throughput
+    source_sampler: os.network
+    partition_by:
+    - interface
+    series:
+    - name: rx
+      value_ref: rx_bytes_per_sec
+      transform: gauge
+      unit: bytes/s
+    chart:
+      kind: area
+      unit: bytes/s
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.network_transmit_throughput:
+    title: Network Transmit Throughput
+    source_sampler: os.network
+    partition_by:
+    - interface
+    series:
+    - name: tx
+      value_ref: tx_bytes_per_sec
+      transform: gauge
+      unit: bytes/s
+    chart:
+      kind: area
+      unit: bytes/s
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  os.network_packets:
+    title: Network Packets
+    source_sampler: os.network
+    partition_by:
+    - interface
+    series:
+    - name: rx packets
+      value_ref: rx_packets_per_sec
+      transform: gauge
+      unit: packets/s
+    - name: tx packets
+      value_ref: tx_packets_per_sec
+      transform: gauge
+      unit: packets/s
+    chart:
+      kind: stacked_area
+      unit: packets/s
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: host_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.query_rate:
+    title: ClickHouse Query Rate
+    source_query: metrics.events
+    partition_by:
+    - host
+    series:
+    - name: queries
+      value_ref: queries
+      transform: rate
+      unit: queries/s
+    - name: selects
+      value_ref: selects
+      transform: rate
+      unit: queries/s
+    - name: failed
+      value_ref: failed_queries
+      transform: rate
+      unit: queries/s
+    chart:
+      kind: stacked_area
+      unit: queries/s
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.row_rate:
+    title: ClickHouse Row Rate
+    source_query: metrics.events
+    partition_by:
+    - host
+    series:
+    - name: inserted
+      value_ref: inserted_rows
+      transform: rate
+      unit: rows/s
+    - name: read
+      value_ref: read_rows
+      transform: rate
+      unit: rows/s
+    chart:
+      kind: stacked_area
+      unit: rows/s
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.byte_rate:
+    title: ClickHouse Data Throughput
+    source_query: metrics.events
+    partition_by:
+    - host
+    series:
+    - name: inserted
+      value_ref: inserted_bytes
+      transform: rate
+      unit: bytes/s
+    - name: read
+      value_ref: read_bytes
+      transform: rate
+      unit: bytes/s
+    chart:
+      kind: stacked_area
+      unit: bytes/s
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.activity:
+    title: ClickHouse Current Activity
+    source_query: metrics.gauges
+    partition_by:
+    - host
+    series:
+    - name: queries
+      value_ref: current_queries
+      transform: gauge
+      unit: count
+    - name: merges
+      value_ref: current_merges
+      transform: gauge
+      unit: count
+    - name: mutations
+      value_ref: current_mutations
+      transform: gauge
+      unit: count
+    - name: distributed sends
+      value_ref: distributed_sends
+      transform: gauge
+      unit: count
+    chart:
+      kind: line
+      unit: count
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.memory:
+    title: ClickHouse Memory Tracking
+    source_query: metrics.gauges
+    partition_by:
+    - host
+    series:
+    - name: memory
+      value_ref: memory_bytes
+      transform: gauge
+      unit: bytes
+    chart:
+      kind: area
+      unit: bytes
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.replication_activity:
+    title: Replication Fetch And Send Activity
+    source_query: metrics.gauges
+    partition_by:
+    - host
+    series:
+    - name: fetches
+      value_ref: replicated_fetches
+      transform: gauge
+      unit: count
+    - name: sends
+      value_ref: replicated_sends
+      transform: gauge
+      unit: count
+    chart:
+      kind: line
+      unit: count
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.replication_queue:
+    title: Replication Queue And Delay
+    source_query: metrics.replication
+    partition_by:
+    - host
+    series:
+    - name: queue
+      value_ref: queue_size
+      transform: gauge
+      unit: count
+    - name: readonly replicas
+      value_ref: readonly_replicas
+      transform: gauge
+      unit: count
+    chart:
+      kind: line
+      unit: count
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.part_creation_rate:
+    title: New Data Parts Per Second
+    source_query: metrics.part_creation
+    partition_by:
+    - host
+    series:
+    - name: new parts
+      value_ref: created_parts
+      transform: rate
+      unit: count
+    chart:
+      kind: area
+      unit: count
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.keeper_events:
+    title: Keeper And ZooKeeper Event Rate
+    source_query: metrics.events
+    partition_by:
+    - host
+    series:
+    - name: keeper events
+      value_ref: keeper_events
+      transform: rate
+      unit: count
+    chart:
+      kind: area
+      unit: count
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true

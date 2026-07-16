@@ -1,0 +1,62 @@
+x-clickhouse-node: &clickhouse-node
+  build:
+    context: ../../..
+    dockerfile: tests/integration/multinode/Dockerfile
+    args:
+      CLICKHOUSE_VERSION: ${CLICKHOUSE_VERSION:-25.8.28.1}
+  image: chdiag-multinode-clickhouse:${CLICKHOUSE_VERSION_TAG:-25-8-28-1}
+  restart: unless-stopped
+  ulimits:
+    nofile: {soft: 262144, hard: 262144}
+  environment:
+    CLICKHOUSE_SKIP_USER_SETUP: "1"
+  depends_on:
+    - keeper
+  volumes:
+    - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/chdiag-cluster.xml:ro
+
+services:
+  keeper:
+    image: clickhouse/clickhouse-keeper:${CLICKHOUSE_VERSION:-25.8.28.1}
+    container_name: chdiag-multinode-keeper
+    hostname: keeper
+    restart: unless-stopped
+    ulimits:
+      nofile: {soft: 262144, hard: 262144}
+    ports:
+      - "127.0.0.1:${CHDIAG_KEEPER_PORT:-19181}:9181"
+    volumes:
+      - ./keeper-config.xml:/etc/clickhouse-keeper/keeper_config.xml:ro
+      - keeper-data:/var/lib/clickhouse
+
+  node1:
+    <<: *clickhouse-node
+    container_name: chdiag-multinode-node1
+    hostname: chdiag-node1
+    ports:
+      - "127.0.0.1:${CHDIAG_NODE1_NATIVE_PORT:-19101}:9000"
+      - "127.0.0.1:${CHDIAG_NODE1_SSH_PORT:-12301}:22"
+    volumes:
+      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/chdiag-cluster.xml:ro
+      - ./node1-macros.xml:/etc/clickhouse-server/config.d/chdiag-macros.xml:ro
+      - node1-data:/var/lib/clickhouse
+
+  node2:
+    <<: *clickhouse-node
+    container_name: chdiag-multinode-node2
+    hostname: chdiag-node2
+    ports:
+      - "127.0.0.1:${CHDIAG_NODE2_NATIVE_PORT:-19102}:9000"
+      - "127.0.0.1:${CHDIAG_NODE2_SSH_PORT:-12302}:22"
+    volumes:
+      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/chdiag-cluster.xml:ro
+      - ./node2-macros.xml:/etc/clickhouse-server/config.d/chdiag-macros.xml:ro
+      - node2-data:/var/lib/clickhouse
+
+volumes:
+  keeper-data:
+    name: chdiag-multinode-keeper-data
+  node1-data:
+    name: chdiag-multinode-node1-data
+  node2-data:
+    name: chdiag-multinode-node2-data

@@ -1,0 +1,7 @@
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+PubkeyAuthentication yes
+AllowUsers chdiag
+X11Forwarding no
+AllowTcpForwarding yes
