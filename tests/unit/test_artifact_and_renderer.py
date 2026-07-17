@@ -14,6 +14,16 @@ def test_large_clickhouse_integer_is_lossless() -> None:
     assert json_safe(2**64 - 1, descriptor) == str(2**64 - 1)
 
 
+def test_numeric_hash_is_an_exact_identifier_not_an_adaptive_count() -> None:
+    descriptor = column_descriptor("normalized_query_hash", "UInt64", [], 0)
+
+    assert descriptor["value_kind"] == "integer"
+    assert descriptor["semantic_role"] == "identifier"
+    assert descriptor["quantity"] == "identifier"
+    assert descriptor["unit"] == "none"
+    assert json_safe(11636551938543030549, descriptor) == "11636551938543030549"
+
+
 def test_packaged_artifact_json_schema_is_v5() -> None:
     schema = load_artifact_schema()
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
@@ -24,7 +34,7 @@ def test_packaged_artifact_json_schema_is_v5() -> None:
 def test_renderer_is_standalone_and_branded_for_ch_diag() -> None:
     artifact = {
         "artifact_schema_version": 5,
-        "generator": {"name": "ch_diag", "product": "ch_diag", "version": "0.9.0"},
+        "generator": {"name": "ch_diag", "product": "ch_diag", "version": "0.8.0"},
         "content": {"schema_version": 5, "document": {"catalogs": {"presentation": {"units": {}}}}, "provenance": {}},
         "report": {"id": "ch_diag", "title": "ClickHouse Diagnostic Report"},
         "database": {"engine": "clickhouse", "server_version": "25.8"},
@@ -57,7 +67,7 @@ def test_formal_schema_is_valid_and_accepts_the_renderer_artifact() -> None:
     Draft202012Validator.check_schema(schema)
     artifact = {
         "artifact_schema_version": 5,
-        "generator": {"name": "ch_diag", "product": "ch_diag", "version": "0.9.0"},
+        "generator": {"name": "ch_diag", "product": "ch_diag", "version": "0.8.0"},
         "content": {"schema_version": 5},
         "report": {"id": "ch_diag", "title": "ClickHouse Diagnostic Report"},
         "database": {"engine": "clickhouse", "server_version": "25.8"},

@@ -1,19 +1,27 @@
 # Mounted Filesystems
 
-Current filesystem mounts.
+This instruction belongs to report item `operating_system.mounts`. The item is backed by `operating_system.mounts` (local host script).
 
-## Collection contract
+## What this item shows
+- Currently mounted filesystems and mount options.
+- Actual runtime storage layout used by the collector host.
 
-- Source: `script:os.mounts`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Mounts differ from `/etc/fstab`
+- Read-only or unexpected mount options on database paths.
+- Database directories mounted on slower or temporary storage.
 
-## Interpretation
+## Common fault causes
+- Manual remount.
+- Failed mount at boot.
+- Storage failover or device replacement.
+- Container bind mount hiding host layout.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned because the intended mount layout and approved options are environment-specific.
+- The result is the collector mount namespace; containerized collection may not expose host mounts.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with fstab and disk usage.
+- Confirm ClickHouse data, logs, temporary files, and backups are on intended mounts.
+- Check mount options before diagnosing I/O performance.

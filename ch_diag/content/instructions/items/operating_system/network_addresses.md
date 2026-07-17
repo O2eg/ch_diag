@@ -1,19 +1,27 @@
 # Network Addresses And Hosts
 
-Network addresses and hostname mappings.
+This instruction belongs to report item `operating_system.network_addresses`. The item is backed by `operating_system.network_addresses` (local host script).
 
-## Collection contract
+## What this item shows
+- Local network addresses, interfaces, and host name mappings.
+- Networking context for client, replication, backup, and monitoring connectivity.
 
-- Source: `script:os.network_addresses`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected IP address, hostname, DNS mapping, or interface state.
+- Multiple addresses where ClickHouse or replication should bind only one.
+- Address mismatch after failover or host rebuild.
 
-## Interpretation
+## Common fault causes
+- DNS drift.
+- Network interface renumbering.
+- Wrong host aliases.
+- Container or VPN namespace confusion.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned because expected interfaces and addresses require an environment baseline.
+- `unsupported` means the `ip` utility was unavailable. A failure of both `ip -br addr` and the compatible `ip addr show` fallback is an error rather than partial success.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with ClickHouse listen_addresses, pg_hba, and replication configuration.
+- Confirm monitoring and application endpoints use the expected address.
+- Check standby and backup connectivity when addresses changed.

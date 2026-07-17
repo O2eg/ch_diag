@@ -1,19 +1,21 @@
 # Replication queue (based on system.replication_queue)
 
-Tasks from replication queues stored in Clickhouse Keeper or ZooKeeper, for tables in the ReplicatedMergeTree family
+This instruction belongs to report item `replication.repl_queue`.
 
-## Collection contract
+## What this item shows
+- Tasks from replication queues stored in Clickhouse Keeper or ZooKeeper, for tables in the ReplicatedMergeTree family.
+- The table exposes ReplicatedMergeTree state coordinated through Keeper or ZooKeeper.
 
-- Source: `query:legacy.replication.repl_queue`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Old/retrying tasks, GET_PART/MERGE_PARTS backlog, or repeated exception.
 
-## Interpretation
+## Common fault causes
+- Unavailable source, Keeper/network trouble, disk pressure, corrupt part, or slow merges.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The item is point-in-time evidence; a short transient queue/fetch can be normal, while persistence across captures is significant.
+- Local scope describes this node's view and must not be presented as cluster-wide certainty.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Find the oldest/failing task and table.
+- Correlate replicas, fetches, outcomes, and logs.

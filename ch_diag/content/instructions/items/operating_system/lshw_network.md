@@ -1,19 +1,26 @@
 # Network Interfaces
 
-Hardware inventory from lshw class network.
+This instruction belongs to report item `operating_system.lshw_network`. The item is backed by `operating_system.lshw_network` (local host script).
 
-## Collection contract
+## What this item shows
+- Network interface hardware inventory, driver, bus, and link details where visible.
+- Device-level context for client and replication network paths.
 
-- Source: `script:os.lshw_network`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Wrong NIC model, speed, driver, or missing interface.
+- Interface not matching expected production network.
+- Virtual NIC changes after migration.
 
-## Interpretation
+## Common fault causes
+- VM network adapter change.
+- Driver/firmware mismatch.
+- Host moved to different network class.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned without expected NIC, driver, speed, and bonding policy.
+- Missing link details can result from permissions or virtualization; correlate with runtime addresses and network monitoring.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with `Network Addresses And Hosts`
+- Check NIC speed and driver when network throughput or replication lag is suspected.
+- Confirm active interface is the intended one.

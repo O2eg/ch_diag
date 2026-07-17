@@ -1,19 +1,21 @@
 # Pools utilization [avg by last week] (based on system.metric_log)
 
-Pools utilization [avg by last week] (based on system.metric_log)
+This instruction belongs to report item `historical_workload.workload_pools_avg`.
 
-## Collection contract
+## What this item shows
+- Pools utilization [avg by last week] (based on system.metric_log).
+- The table summarizes retained ClickHouse metric-log history over its stated lookback.
 
-- Source: `query:legacy.workload.workload_pools_avg`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Pools with persistently high average use or strong host imbalance.
 
-## Interpretation
+## Common fault causes
+- Sustained merge/replication/query pressure, undersized pools, or slow dependencies.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Results depend on metric-log enablement, cadence, retention, and restart gaps.
+- Averages smooth peaks and maxima do not show duration; no universal severity is assigned.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with weekly maxima and current pool chart.
+- Check log gaps and restarts before interpreting zero.

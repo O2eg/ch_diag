@@ -1,19 +1,26 @@
 # Kernel And Architecture
 
-uname output from the collected host.
+This instruction belongs to report item `operating_system.kernel_version`. The item is backed by `operating_system.kernel_version` (local host script).
 
-## Collection contract
+## What this item shows
+- Kernel release, architecture, and local build identifier.
+- Whether the collector host is the expected Linux host for local collection.
 
-- Source: `script:os.kernel_version`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Kernel much older than the supported platform baseline.
+- Architecture mismatch with expected packages or extensions.
+- Kernel version changed without a corresponding reboot plan.
 
-## Interpretation
+## Common fault causes
+- Host booted into an older kernel after patching.
+- Collector running in a container or namespace that hides the real host.
+- Unsupported kernel/distribution combination.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned because support, vulnerability, and reboot status require external vendor/package data.
+- The value comes from the collector's current UTS namespace; containers can expose a host kernel unrelated to the container image.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Confirm kernel support with the OS vendor baseline.
+- Check whether kernel security updates require reboot.
+- Compare with `OS Distribution` and package maintenance records.

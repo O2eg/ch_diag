@@ -1,19 +1,21 @@
 # ClickHouse Memory Tracking
 
-ClickHouse Memory Tracking
+This instruction belongs to report item `snapshot_charts_clickhouse.memory`.
 
-## Collection contract
+## What this item shows
+- ClickHouse MemoryTracking and related current memory gauges.
+- This is server allocator accounting, distinct from Linux RSS.
 
-- Source: `metric:clickhouse.memory`.
-- Timing: `every_snapshot`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Approaching effective limits, sharp peaks, or divergence from RSS/MemAvailable.
 
-## Interpretation
+## Common fault causes
+- Large joins/aggregations/sorts, concurrency, caches, merges, mutations, dictionaries, or fragmentation/untracked mappings.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Point-in-time gauges can miss short peaks.
+- No universal severity is assigned without server/user/query limits.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with process RSS, MemAvailable/swap, and top-memory queries.
+- Inspect effective memory/overcommit settings.

@@ -1,19 +1,21 @@
 # Top CPU And Memory Queries
 
-Aggregates by normalized hash without exposing query text.
+This instruction belongs to report item `dba_troubleshooting.top_cpu_memory`.
 
-## Collection contract
+## What this item shows
+- Finished query groups ranked by aggregate CPU/memory workload without exposing query text.
+- The normalized fingerprint is an exact opaque UInt64 identifier.
 
-- Source: `query:troubleshooting.top_cpu_memory`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Fingerprints dominating CPU, peak memory, or reads, especially with high p95 duration.
 
-## Interpretation
+## Common fault causes
+- Expensive joins/aggregations/sorts, poor pruning, parallelism, skew, or retries.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Coverage is bounded by query_log retention/LTS capabilities.
+- Ranking is diagnostic, not an automatic kill recommendation.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Resolve the exact hash to query_id/text securely.
+- Compare thread/process CPU, memory pressure, and selected parts.

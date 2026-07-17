@@ -1,19 +1,21 @@
 # Last 20 errors in cluster (based on system.errors)
 
-Last 20 errors in cluster (based on system.errors)
+This instruction belongs to report item `errors.errors_last`.
 
-## Collection contract
+## What this item shows
+- Last 20 errors in cluster (based on system.errors).
+- The result preserves bounded ClickHouse error evidence for root-cause correlation.
 
-- Source: `query:legacy.errors.errors_last`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- recent repeated errors aligned with the incident
 
-## Interpretation
+## Common fault causes
+- deployment, query, storage/network, or resource event; secondary errors may follow an earlier root failure
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Collection status only says whether the diagnostic query ran; returned error rows are incident evidence, not an OK result.
+- An empty result may mean no matches, while unsupported, permission-denied, and log-retention gaps are distinct diagnostics.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Group by code/message and locate the first occurrence.
+- Correlate host/time with logs, query/table/replica, and resource charts.

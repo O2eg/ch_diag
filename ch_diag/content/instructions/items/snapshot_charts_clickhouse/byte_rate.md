@@ -1,19 +1,21 @@
 # ClickHouse Data Throughput
 
-ClickHouse Data Throughput
+This instruction belongs to report item `snapshot_charts_clickhouse.byte_rate`.
 
-## Collection contract
+## What this item shows
+- Selected and inserted byte rates from ClickHouse event counters.
+- These are logical server-processing bytes, not necessarily physical disk bytes.
 
-- Source: `metric:clickhouse.byte_rate`.
-- Timing: `every_snapshot`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Read amplification, selected-byte spikes without useful output, or ingestion throughput collapse.
 
-## Interpretation
+## Common fault causes
+- Full scans, poor pruning, large columns, compression changes, bulk inserts, retries, or remote/distributed work.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Reset counters create gaps.
+- Logical bytes must not be interpreted as device throughput.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with rows, parts/marks, file I/O, network, and iostat.
+- Inspect compression/query shape when bytes per row change.

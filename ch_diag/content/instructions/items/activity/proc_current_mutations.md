@@ -1,19 +1,21 @@
 # Current mutations (based on system.mutations)
 
-Current mutations (based on system.mutations)
+This instruction belongs to report item `activity.proc_current_mutations`.
 
-## Collection contract
+## What this item shows
+- Current mutations (based on system.mutations).
+- The table shows currently active or queued work, not a historical rate.
 
-- Source: `query:legacy.processes.proc_current_mutations`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Old unfinished mutations, many parts remaining, or repeated latest_fail_reason.
 
-## Interpretation
+## Common fault causes
+- Heavy ALTER DELETE/UPDATE, insufficient merge capacity, bad parts, disk, or replication trouble.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- This point-in-time table can miss work that starts and finishes outside collection.
+- A nonempty result is not automatically unhealthy; elapsed time, progress, backlog, and errors determine significance.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Read failure reason and affected parts.
+- Correlate with merges, replication, and capacity before kill/restart.

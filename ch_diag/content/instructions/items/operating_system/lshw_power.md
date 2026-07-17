@@ -1,19 +1,25 @@
 # Power Components
 
-Hardware inventory from lshw class power.
+This instruction belongs to report item `operating_system.lshw_power`. The item is backed by `operating_system.lshw_power` (local host script).
 
-## Collection contract
+## What this item shows
+- Power supply or battery inventory visible to lshw.
+- Hardware power component context.
 
-- Source: `script:os.lshw_power`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Battery or power device state unexpected for server hardware.
+- Missing power inventory on bare metal.
 
-## Interpretation
+## Common fault causes
+- Hardware monitoring limitation.
+- VM hides real power devices.
+- Power component replacement.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned because lshw does not provide authoritative health telemetry.
+- Empty output is expected in VMs; use BMC/cloud monitoring for actual power health.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Use platform monitoring for real power health.
+- Treat virtual power devices as inventory noise.
+- Escalate bare-metal power anomalies to operations.

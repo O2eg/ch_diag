@@ -1,19 +1,26 @@
 # Bridges And Controllers
 
-Hardware inventory from lshw class bridge.
+This instruction belongs to report item `operating_system.lshw_bridge`. The item is backed by `operating_system.lshw_bridge` (local host script).
 
-## Collection contract
+## What this item shows
+- Bridge and controller hardware inventory.
+- Chipset or virtual controller context for attached devices.
 
-- Source: `script:os.lshw_bridge`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected bridge/controller changes.
+- Missing controller inventory.
+- Hardware topology inconsistent with expected platform.
 
-## Interpretation
+## Common fault causes
+- Host replacement.
+- VM hardware version change.
+- Driver or permission issue.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned; bridge/controller presence is platform-specific.
+- Empty class output can be normal for a VM; lshw stderr warnings mark incomplete evidence.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Review after storage/network device changes.
+- Use with device-specific lshw sections.
+- Escalate topology surprises to platform owners.

@@ -1,19 +1,25 @@
 # System Memory Hardware
 
-Hardware inventory from lshw class memory.
+This instruction belongs to report item `operating_system.lshw_memory`. The item is backed by `operating_system.lshw_memory` (local host script).
 
-## Collection contract
+## What this item shows
+- Physical memory modules and memory hardware metadata when visible.
+- Memory size, banks, and hardware characteristics from lshw.
 
-- Source: `script:os.lshw_memory`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Missing modules, degraded memory, or unexpected capacity.
+- Inventory unavailable because of permissions.
 
-## Interpretation
+## Common fault causes
+- Hardware failure or replacement.
+- BIOS configuration change.
+- lshw permission limits.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned; absent module details are common in VMs and unprivileged collection.
+- Compare capacity with `/proc/meminfo`; an empty table is not proof that memory hardware is missing.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with `Total RAM Capacity`
+- Check hardware monitoring for memory faults.
+- Validate capacity after maintenance.

@@ -1602,6 +1602,29 @@ __ECHARTS_JS__
       min-width: 0;
     }
 
+    .scalar-result {
+      display: flex;
+      align-items: baseline;
+      min-width: 0;
+      padding: 8px 0 2px;
+    }
+
+    .scalar-result-value {
+      color: var(--text);
+      font-size: clamp(20px, 2.2vw, 30px);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+      text-align: left;
+    }
+
+    .scalar-result-value.empty {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
     .snapshot-time-label {
       justify-self: start;
       max-width: 100%;
@@ -2164,6 +2187,7 @@ __ECHARTS_JS__
         <span>Type</span>
         <select id="itemTypeFilter" class="select">
           <option value="">All items</option>
+          <option value="scalar">Scalar</option>
           <option value="plain_text">Plain Text</option>
           <option value="table">Table</option>
           <option value="chart">Chart</option>
@@ -2274,7 +2298,7 @@ __HIGHLIGHT_JS__
     const CHART_LEGEND_ROW_HEIGHT_PX = 24;
     const CHART_LEGEND_PADDING_PX = 16;
     const CHART_LEGEND_MAX_VISIBLE_ROWS = 6;
-    const DATA_TYPE_ORDER = ["table", "plain_text", "chart"];
+    const DATA_TYPE_ORDER = ["scalar", "table", "plain_text", "chart"];
     const TAG_ORDER = [
       "Configuration",
       "Security",
@@ -2882,6 +2906,7 @@ __HIGHLIGHT_JS__
 
     function dataTypeSvg(type) {
       const icons = {
+        scalar: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4L6 20M16 4l-2 16M4 9h16M3 15h16"></path></svg>',
         table: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="1.5"></rect><path d="M4 10h16M4 15h16M10 5v14M16 5v14"></path></svg>',
         plain_text: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h7l3 3v13H7z"></path><path d="M14 4v4h4M9 12h6M9 16h6"></path></svg>',
         chart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"></path><path d="M6 16l4-5 4 3 4-7"></path><path d="M18 7h-4M18 7v4"></path></svg>',
@@ -2891,6 +2916,7 @@ __HIGHLIGHT_JS__
 
     function dataTypeLabel(type) {
       const labels = {
+        scalar: "Scalar",
         table: "Table",
         plain_text: "Plain text",
         chart: "Chart",
@@ -2922,6 +2948,9 @@ __HIGHLIGHT_JS__
 
     function itemDataType(item) {
       const resultKind = String(((item || {}).result || {}).kind || "").toLowerCase();
+      if (resultKind === "table" && isScalarTableResult((item || {}).result || {})) {
+        return "scalar";
+      }
       if (resultKind === "table" || resultKind === "chart" || resultKind === "plain_text") {
         return resultKind;
       }
@@ -2937,6 +2966,31 @@ __HIGHLIGHT_JS__
         return Object.keys(chart).length ? "chart" : "table";
       }
       return "plain_text";
+    }
+
+    function isScalarTableResult(result) {
+      const rows = Array.isArray(result.rows) ? result.rows : [];
+      const rawColumns = Array.isArray(result.columns) ? result.columns : [];
+      if (rows.length !== 1 || !rawColumns.length) {
+        return false;
+      }
+      const referencedMetadataColumns = new Set();
+      for (const column of rawColumns) {
+        if (!column || typeof column !== "object") {
+          continue;
+        }
+        if (column.quantity_ref) {
+          referencedMetadataColumns.add(column.quantity_ref);
+        }
+        if (column.unit_ref) {
+          referencedMetadataColumns.add(column.unit_ref);
+        }
+      }
+      const visible = rawColumns.filter((column) => {
+        const name = typeof column === "string" ? column : String((column || {}).name || "");
+        return name !== "snapshot_time" && !referencedMetadataColumns.has(name);
+      });
+      return visible.length === 1;
     }
 
     function collectionStatus(item) {
@@ -4388,8 +4442,7 @@ __HIGHLIGHT_JS__
           const average = finiteValues.length ? total / finiteValues.length : Number.NEGATIVE_INFINITY;
           return {name: entry.name, unit: entry.unit, _color: entry.color || "", _sourceIndex: sourceIndex, _average: average, data};
         })
-        .filter((entry) => entry.data.some((point) => Number.isFinite(point.y)))
-        .filter((entry) => entry.data.some((point) => Number.isFinite(point.y) && point.y !== 0));
+        .filter((entry) => entry.data.some((point) => Number.isFinite(point.y)));
       if ((result.chart || {}).series_order === "configured") {
         return series;
       }
@@ -5316,7 +5369,18 @@ __HIGHLIGHT_JS__
       const rows = Array.isArray(result.rows) ? result.rows : [];
       const allColumns = buildColumns(result.columns, rows);
       const snapshotTimeColumn = allColumns.find((column) => column.name === "snapshot_time");
-      const columns = allColumns.filter((column) => column !== snapshotTimeColumn);
+      const referencedMetadataColumns = new Set();
+      for (const column of allColumns) {
+        if (column.quantityRef) {
+          referencedMetadataColumns.add(column.quantityRef);
+        }
+        if (column.unitRef) {
+          referencedMetadataColumns.add(column.unitRef);
+        }
+      }
+      const columns = allColumns.filter(
+        (column) => column !== snapshotTimeColumn && !referencedMetadataColumns.has(column.name)
+      );
       const collectedAt = item.source_kind === "metric" ? null : item.collected_at;
       const tableContextLabels = renderTableContextLabels(
         result,
@@ -5338,6 +5402,16 @@ __HIGHLIGHT_JS__
         container.appendChild(tableContextLabels);
         container.appendChild(empty);
         return container;
+      }
+      if (rows.length === 1 && columns.length === 1) {
+        return renderScalarTable(
+          result,
+          item,
+          rows[0],
+          columns[0],
+          allColumns,
+          tableContextLabels
+        );
       }
       const defaultSort = normalizeDefaultSort(item, columns);
       const shell = document.createElement("div");
@@ -5432,6 +5506,7 @@ __HIGHLIGHT_JS__
         cellStatuses: buildCellStatusMap(result.cell_statuses),
         columnStatuses: result.column_statuses || {},
         columns,
+        valueColumns: allColumns,
         filteredRows: rows,
         page: 0,
         pageSize: configuredPageSize,
@@ -5483,6 +5558,37 @@ __HIGHLIGHT_JS__
       container.className = "snapshot-table-result";
       container.appendChild(tableContextLabels);
       container.appendChild(shell);
+      return container;
+    }
+
+    function renderScalarTable(result, item, row, column, allColumns, tableContextLabels) {
+      const cellStatuses = buildCellStatusMap(result.cell_statuses);
+      const status = cellStatuses.get("0\u0000" + column.name)
+        || (result.column_statuses || {})[column.name]
+        || null;
+      const display = displayValue(
+        Array.isArray(row) ? row[column.sourceIndex] : undefined,
+        column,
+        row,
+        allColumns,
+        status
+      );
+      const value = document.createElement("div");
+      value.className = "scalar-result-value" + (display.kind === "empty" ? " empty" : "");
+      setHighlightableText(value, display.text || itemEmptyMessage(item, "No value"));
+      if (display.title && display.title !== display.text) {
+        value.title = display.title;
+      }
+      const scalar = document.createElement("div");
+      scalar.className = "scalar-result";
+      scalar.appendChild(value);
+      if (!tableContextLabels) {
+        return scalar;
+      }
+      const container = document.createElement("div");
+      container.className = "snapshot-table-result";
+      container.appendChild(tableContextLabels);
+      container.appendChild(scalar);
       return container;
     }
 
@@ -5674,7 +5780,7 @@ __HIGHLIGHT_JS__
             Array.isArray(row) ? row[column.sourceIndex] : undefined,
             column,
             row,
-            state.columns,
+            state.valueColumns,
             status
           ));
         }

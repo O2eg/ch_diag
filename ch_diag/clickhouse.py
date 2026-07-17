@@ -456,6 +456,7 @@ def classify_error(exc: BaseException, *, optional_capability: bool = False) -> 
             "unknown identifier",
             "no zookeeper configuration",
             "there is no keeper configuration",
+            "no hosts passed to zookeeper constructor",
         )
     ):
         return "unsupported"

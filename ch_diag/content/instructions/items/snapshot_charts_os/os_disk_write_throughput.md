@@ -1,19 +1,27 @@
 # Disk Write Throughput
 
-Disk Write Throughput
+This instruction belongs to report item `snapshot_charts_os.os_disk_write_throughput`. The item is backed by `os.disk_write_throughput` (snapshot metric).
 
-## Collection contract
+## What this item shows
+- Write throughput by block device over time.
+- Which device receives writes during the capture window.
 
-- Source: `metric:os.disk_write_throughput`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Sustained high writes on ClickHouse data, temporary, or log devices.
+- Write spikes during merges, mutations, replication recovery, or bulk inserts.
+- Writes aligned with rapid part creation or merge backlog.
 
-## Interpretation
+## Common fault causes
+- New part creation and background merges.
+- Mutations, TTL processing, and replication fetches.
+- Bulk inserts and temporary query spill.
+- Backups or materialized-view fan-out.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Values come from interval iostat reports and are informational; throughput alone does not indicate saturation.
+- The first since-boot iostat report is discarded.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Map devices to ClickHouse data, temporary, log, and backup paths.
+- Compare with part creation, merge throughput, current mutations, and replication activity.
+- Check latency when throughput is high.

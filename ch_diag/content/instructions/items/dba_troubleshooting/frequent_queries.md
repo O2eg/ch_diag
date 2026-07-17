@@ -1,19 +1,21 @@
 # Most Frequent Normalized Queries
 
-Execution frequency and bounded workload aggregates without query text.
+This instruction belongs to report item `dba_troubleshooting.frequent_queries`.
 
-## Collection contract
+## What this item shows
+- Top normalized fingerprints from finished query_log rows with executions, latency, rows/bytes, and recency.
+- normalized_query_hash is an opaque UInt64 identifier displayed exactly; it must never receive K/M/G/P scaling.
 
-- Source: `query:troubleshooting.frequent_queries`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- High executions combined with high p95/read volume, or low-cost queries whose extreme call count creates material aggregate load.
 
-## Interpretation
+## Common fault causes
+- N+1 access, polling, retries, missing batching, or a regressed broadly used query.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Bounded query_log coverage can be empty when disabled/expired.
+- Older LTS SQL may compute a compatible hash; it is for correlation, not arithmetic, and collisions are theoretically possible.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Copy the exact fingerprint into protected query_log investigation.
+- Compare with Top CPU/Memory and workload rankings, then inspect query text/settings.

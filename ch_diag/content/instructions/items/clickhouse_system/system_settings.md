@@ -1,19 +1,21 @@
 # Config parameters (based on system.settings)
 
-Config parameters (based on system.settings)
+This instruction belongs to report item `clickhouse_system.system_settings`.
 
-## Collection contract
+## What this item shows
+- Config parameters (based on system.settings).
+- The values come from ClickHouse system tables and describe the connected node or selected cluster scope.
 
-- Source: `query:legacy.system.system_settings`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Risky memory, concurrency, timeout, distributed, or security settings and cross-node differences.
 
-## Interpretation
+## Common fault causes
+- Profile/user/config drift, session overrides, or emergency tuning.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The table is informational and shaped by the SQL variant for the nearest preceding supported LTS.
+- Visibility follows the diagnostic user's privileges; absence caused by unsupported capability is reported separately.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with approved defaults/baseline.
+- Correlate suspect settings with the resource/error symptom they could cause.

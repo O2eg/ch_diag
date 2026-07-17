@@ -1,19 +1,21 @@
 # Top long queries with ProfileEvents aggregated by normalized_query_hash and event_name
 
-Top long queries with ProfileEvents aggregated by normalized_query_hash and event_name
+This instruction belongs to report item `query_workload.queries_top_long_profile_events_agg`.
 
-## Collection contract
+## What this item shows
+- Top long queries with ProfileEvents aggregated by normalized_query_hash and event_name.
+- The table ranks finished query_log workload for DBA triage.
 
-- Source: `query:legacy.queries.queries_top_long_profile_events_agg`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- High read/decompression/I/O/wait events per execution or event-mix changes for one fingerprint.
 
-## Interpretation
+## Common fault causes
+- Poor pruning, cache miss, remote I/O, heavy computation, or plan/settings regression.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The ranking is bounded by query_log retention, sampling/settings, privileges, and the query LIMIT.
+- normalized_query_hash values are opaque exact UInt64 identifiers for correlation and must not be scaled or treated arithmetically.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare per-execution values, not totals alone.
+- Resolve hash and correlate with parts/file/disk metrics.

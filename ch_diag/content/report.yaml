@@ -212,45 +212,45 @@ sections:
     state: expanded
     items:
       system_common:
-        query: legacy.system.system_common
+        query: diagnostics.system.system_common
         tags: &id001
         - Configuration
         - Cluster
         state: expanded
       system_clusters:
-        query: legacy.system.system_clusters
+        query: diagnostics.system.system_clusters
         tags: *id001
         state: expanded
       system_macros:
-        query: legacy.system.system_macros
+        query: diagnostics.system.system_macros
         tags: *id001
         state: expanded
       system_databases:
-        query: legacy.system.system_databases
+        query: diagnostics.system.system_databases
         tags: *id001
         state: expanded
       system_databases_ext:
-        query: legacy.system.system_databases_ext
+        query: diagnostics.system.system_databases_ext
         tags: *id001
         state: collapsed
       system_storage_policies:
-        query: legacy.system.system_storage_policies
+        query: diagnostics.system.system_storage_policies
         tags: *id001
         state: collapsed
       system_disks:
-        query: legacy.system.system_disks
+        query: diagnostics.system.system_disks
         tags: *id001
         state: collapsed
       system_settings:
-        query: legacy.system.system_settings
+        query: diagnostics.system.system_settings
         tags: *id001
         state: collapsed
       system_merge_tree_settings:
-        query: legacy.system.system_merge_tree_settings
+        query: diagnostics.system.system_merge_tree_settings
         tags: *id001
         state: collapsed
       system_events:
-        query: legacy.system.system_events
+        query: diagnostics.system.system_events
         tags: *id001
         state: collapsed
   errors:
@@ -259,48 +259,48 @@ sections:
     state: expanded
     items:
       errors_top:
-        query: legacy.errors.errors_top
+        query: diagnostics.errors.errors_top
         tags: &id002
         - Errors
         state: expanded
       errors_last:
-        query: legacy.errors.errors_last
+        query: diagnostics.errors.errors_last
         tags: *id002
         state: expanded
       errors_mutations:
-        query: legacy.errors.errors_mutations
+        query: diagnostics.errors.errors_mutations
         tags: *id002
         state: expanded
       errors_stat:
-        query: legacy.errors.errors_stat
+        query: diagnostics.errors.errors_stat
         tags: *id002
         state: expanded
       errors_queries:
-        query: legacy.errors.errors_queries
+        query: diagnostics.errors.errors_queries
         tags: *id002
         state: collapsed
       errors_dictionaries:
-        query: legacy.errors.errors_dictionaries
+        query: diagnostics.errors.errors_dictionaries
         tags: *id002
         state: collapsed
       errors_distribution_queue:
-        query: legacy.errors.errors_distribution_queue
+        query: diagnostics.errors.errors_distribution_queue
         tags: *id002
         state: collapsed
       errors_replicas:
-        query: legacy.errors.errors_replicas
+        query: diagnostics.errors.errors_replicas
         tags: *id002
         state: collapsed
       errors_replication_queue:
-        query: legacy.errors.errors_replication_queue
+        query: diagnostics.errors.errors_replication_queue
         tags: *id002
         state: collapsed
       errors_distributed_ddl_queue:
-        query: legacy.errors.errors_distributed_ddl_queue
+        query: diagnostics.errors.errors_distributed_ddl_queue
         tags: *id002
         state: collapsed
       errors_keeper:
-        query: legacy.errors.errors_keeper
+        query: diagnostics.errors.errors_keeper
         tags: *id002
         state: collapsed
   databases_objects:
@@ -309,62 +309,62 @@ sections:
     state: expanded
     items:
       db_dictionaries:
-        query: legacy.db.db_dictionaries
+        query: diagnostics.db.db_dictionaries
         tags: &id003
         - Databases
         - Tables
         - Storage
         state: expanded
       db_distr_by_hosts:
-        query: legacy.db.db_distr_by_hosts
+        query: diagnostics.db.db_distr_by_hosts
         tags: *id003
         state: expanded
       db_distr_engines_by_hosts:
-        query: legacy.db.db_distr_engines_by_hosts
+        query: diagnostics.db.db_distr_engines_by_hosts
         tags: *id003
         state: expanded
       db_stats:
-        query: legacy.db.db_stats
+        query: diagnostics.db.db_stats
         tags: *id003
         state: expanded
       db_tbl_engines_stat:
-        query: legacy.db.db_tbl_engines_stat
+        query: diagnostics.db.db_tbl_engines_stat
         tags: *id003
         state: collapsed
       db_distr_tbl_engines:
-        query: legacy.db.db_distr_tbl_engines
+        query: diagnostics.db.db_distr_tbl_engines
         tags: *id003
         state: collapsed
       db_distr_tbl_engines_by_hosts:
-        query: legacy.db.db_distr_tbl_engines_by_hosts
+        query: diagnostics.db.db_distr_tbl_engines_by_hosts
         tags: *id003
         state: collapsed
       db_top_tables:
-        query: legacy.db.db_top_tables
+        query: diagnostics.db.db_top_tables
         tags: *id003
         state: collapsed
       db_data_skipping_indices:
-        query: legacy.db.db_data_skipping_indices
+        query: diagnostics.db.db_data_skipping_indices
         tags: *id003
         state: collapsed
       db_asymmetric_tbls:
-        query: legacy.db.db_asymmetric_tbls
+        query: diagnostics.db.db_asymmetric_tbls
         tags: *id003
         state: collapsed
       db_symmetric_tbls:
-        query: legacy.db.db_symmetric_tbls
+        query: diagnostics.db.db_symmetric_tbls
         tags: *id003
         state: collapsed
       db_tbls_with_diff_ddls:
-        query: legacy.db.db_tbls_with_diff_ddls
+        query: diagnostics.db.db_tbls_with_diff_ddls
         tags: *id003
         state: collapsed
       db_detached_parts:
-        query: legacy.db.db_detached_parts
+        query: diagnostics.db.db_detached_parts
         tags: *id003
         state: collapsed
       db_parts_stat:
-        query: legacy.db.db_parts_stat
+        query: diagnostics.db.db_parts_stat
         tags: *id003
         state: collapsed
   replication:
@@ -373,17 +373,17 @@ sections:
     state: expanded
     items:
       repl_queue:
-        query: legacy.replication.repl_queue
+        query: diagnostics.replication.repl_queue
         tags: &id004
         - Replication
         - Cluster
         state: expanded
       repl_fetches:
-        query: legacy.replication.repl_fetches
+        query: diagnostics.replication.repl_fetches
         tags: *id004
         state: expanded
       repl_tables:
-        query: legacy.replication.repl_tables
+        query: diagnostics.replication.repl_tables
         tags: *id004
         state: expanded
   activity:
@@ -392,21 +392,21 @@ sections:
     state: expanded
     items:
       proc_current:
-        query: legacy.processes.proc_current
+        query: diagnostics.processes.proc_current
         tags: &id005
         - Activity
         - Queries
         state: expanded
       proc_current_merges:
-        query: legacy.processes.proc_current_merges
+        query: diagnostics.processes.proc_current_merges
         tags: *id005
         state: expanded
       proc_current_mutations:
-        query: legacy.processes.proc_current_mutations
+        query: diagnostics.processes.proc_current_mutations
         tags: *id005
         state: expanded
       proc_distribution_queue:
-        query: legacy.processes.proc_distribution_queue
+        query: diagnostics.processes.proc_distribution_queue
         tags: *id005
         state: expanded
   historical_workload:
@@ -415,25 +415,25 @@ sections:
     state: expanded
     items:
       workload_pools_avg:
-        query: legacy.workload.workload_pools_avg
+        query: diagnostics.workload.workload_pools_avg
         tags: &id006
         - Activity
         - Queries
         state: expanded
       workload_pools_max:
-        query: legacy.workload.workload_pools_max
+        query: diagnostics.workload.workload_pools_max
         tags: *id006
         state: expanded
       workload_system_metrics:
-        query: legacy.workload.workload_system_metrics
+        query: diagnostics.workload.workload_system_metrics
         tags: *id006
         state: expanded
       workload_database_metrics:
-        query: legacy.workload.workload_database_metrics
+        query: diagnostics.workload.workload_database_metrics
         tags: *id006
         state: expanded
       workload_distr_tbls_metrics:
-        query: legacy.workload.workload_distr_tbls_metrics
+        query: diagnostics.workload.workload_distr_tbls_metrics
         tags: *id006
         state: collapsed
   query_workload:
@@ -442,36 +442,36 @@ sections:
     state: expanded
     items:
       queries_by_hosts_common:
-        query: legacy.queries.queries_by_hosts_common
+        query: diagnostics.queries.queries_by_hosts_common
         tags: &id007
         - Queries
         state: expanded
       queries_top_long:
-        query: legacy.queries.queries_top_long
+        query: diagnostics.queries.queries_top_long
         tags: *id007
         state: expanded
       queries_top_long_agg:
-        query: legacy.queries.queries_top_long_agg
+        query: diagnostics.queries.queries_top_long_agg
         tags: *id007
         state: expanded
       queries_top_result_bytes:
-        query: legacy.queries.queries_top_result_bytes
+        query: diagnostics.queries.queries_top_result_bytes
         tags: *id007
         state: expanded
       queries_top_result_bytes_agg:
-        query: legacy.queries.queries_top_result_bytes_agg
+        query: diagnostics.queries.queries_top_result_bytes_agg
         tags: *id007
         state: collapsed
       queries_top_mem:
-        query: legacy.queries.queries_top_mem
+        query: diagnostics.queries.queries_top_mem
         tags: *id007
         state: collapsed
       queries_top_mem_agg:
-        query: legacy.queries.queries_top_mem_agg
+        query: diagnostics.queries.queries_top_mem_agg
         tags: *id007
         state: collapsed
       queries_top_long_profile_events_agg:
-        query: legacy.queries.queries_top_long_profile_events_agg
+        query: diagnostics.queries.queries_top_long_profile_events_agg
         tags: *id007
         state: collapsed
   dba_troubleshooting:
@@ -565,8 +565,8 @@ sections:
         tags: [Network, Snapshots]
         state: collapsed
   snapshot_charts_clickhouse:
-    title: Snapshot Charts ClickHouse
-    description: ClickHouse counter rates and point-in-time gauges sampled over the window.
+    title: Snapshot ClickHouse
+    description: ClickHouse charts plus top thread, pool and logged-query-thread tables for the sampling window.
     state: collapsed
     items:
       process_cpu:
@@ -581,29 +581,101 @@ sections:
         metric: clickhouse.process_io
         tags: [I/O, Activity, Snapshots]
         state: collapsed
+      thread_cpu_top:
+        metric: clickhouse.thread_cpu_top
+        tags: [CPU, Activity, Snapshots]
+        state: expanded
+      thread_io_top:
+        metric: clickhouse.thread_io_top
+        tags: [I/O, Activity, Snapshots]
+        state: collapsed
+      thread_pool_usage:
+        metric: clickhouse.thread_pool_usage
+        tags: [CPU, I/O, Activity, Snapshots]
+        state: expanded
+      logged_thread_cpu_top:
+        metric: clickhouse.logged_thread_cpu_top
+        tags: [CPU, Queries, Activity, Snapshots]
+        state: collapsed
+      logged_thread_io_top:
+        metric: clickhouse.logged_thread_io_top
+        tags: [I/O, Memory, Queries, Snapshots]
+        state: collapsed
       query_rate:
         metric: clickhouse.query_rate
+        tags: [Queries, Activity, Snapshots]
+        state: expanded
+      query_latency:
+        metric: clickhouse.query_latency
         tags: [Queries, Activity, Snapshots]
         state: expanded
       row_rate:
         metric: clickhouse.row_rate
         tags: [Activity, Tables, Snapshots]
         state: expanded
+      selected_parts_rate:
+        metric: clickhouse.selected_parts_rate
+        tags: [Queries, Tables, Activity, Snapshots]
+        state: expanded
       byte_rate:
         metric: clickhouse.byte_rate
         tags: [Activity, I/O, Snapshots]
+        state: expanded
+      file_io:
+        metric: clickhouse.file_io
+        tags: [I/O, Storage, Snapshots]
+        state: expanded
+      network_io:
+        metric: clickhouse.network_io
+        tags: [I/O, Network, Snapshots]
         state: expanded
       activity:
         metric: clickhouse.activity
         tags: [Activity, Queries, Snapshots]
         state: expanded
+      connections:
+        metric: clickhouse.connections
+        tags: [Network, Activity, Snapshots]
+        state: expanded
       memory:
         metric: clickhouse.memory
         tags: [Memory, Activity, Snapshots]
         state: expanded
+      merge_row_rate:
+        metric: clickhouse.merge_row_rate
+        tags: [Tables, Activity, Snapshots]
+        state: expanded
+      merge_byte_rate:
+        metric: clickhouse.merge_byte_rate
+        tags: [Tables, I/O, Activity, Snapshots]
+        state: expanded
+      background_pool_activity:
+        metric: clickhouse.background_pool_activity
+        tags: [Activity, Tables, Snapshots]
+        state: expanded
+      cache_activity:
+        metric: clickhouse.cache_activity
+        tags: [I/O, Activity, Snapshots]
+        state: collapsed
+      table_parts:
+        metric: clickhouse.table_parts
+        tags: [Tables, Storage, Snapshots]
+        state: expanded
+      table_bytes:
+        metric: clickhouse.table_bytes
+        tags: [Tables, Storage, Snapshots]
+        state: expanded
+      open_files:
+        metric: clickhouse.open_files
+        tags: [I/O, Storage, Snapshots]
+        state: collapsed
       replication_activity:
         metric: clickhouse.replication_activity
         tags: [Replication, Activity, Snapshots]
+        state: collapsed
+      replication_outcomes:
+        metric: clickhouse.replication_outcomes
+        tags: [Replication, Errors, Snapshots]
         state: collapsed
       replication_queue:
         metric: clickhouse.replication_queue

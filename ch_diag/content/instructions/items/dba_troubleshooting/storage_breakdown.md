@@ -1,19 +1,19 @@
 # Storage Breakdown By Partition
 
-Parts, rows, bytes, primary-index memory and marks by table partition.
+This instruction belongs to report item `dba_troubleshooting.storage_breakdown`.
 
-## Collection contract
+## What this item shows
+- Rows, parts, bytes, marks, and primary-index memory by table partition.
 
-- Source: `query:troubleshooting.storage_breakdown`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Many parts, disproportionate marks/index memory, or unexpected partition growth.
 
-## Interpretation
+## Common fault causes
+- Small inserts, fine partitioning, retention gaps, weak compression, or merge backlog.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Raw inventory is informational; detached/temporary data may require other evidence.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with filesystem free space and aggregate table charts.
+- Inspect the largest/problem partitions, TTL, part creation, and merges.

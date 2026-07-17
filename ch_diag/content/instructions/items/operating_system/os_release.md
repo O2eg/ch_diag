@@ -1,19 +1,26 @@
 # OS Distribution
 
-Distribution identification from /etc/os-release.
+This instruction belongs to report item `operating_system.os_release`. The item is backed by `operating_system.os_release` (local host script).
 
-## Collection contract
+## What this item shows
+- Linux distribution name, version, ID, and codename from `/etc/os-release`, with `/usr/lib/os-release` as the standard fallback.
+- Operating-system support context for ClickHouse packages and tooling.
 
-- Source: `script:os.os_release`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Distribution version near EOL.
+- Unexpected image, codename, or vendor for this database host.
+- Different OS release between primary and standby hosts.
 
-## Interpretation
+## Common fault causes
+- Host rebuilt from a wrong base image.
+- Repository migration incomplete.
+- Managed image drift between nodes.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned because release support and EOL dates require an external vendor lifecycle baseline.
+- `unsupported` means neither standard os-release file was readable; it does not identify the distribution as unsupported.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Verify OS support lifecycle.
+- Confirm ClickHouse repository matches the OS release.
+- Compare OS release across cluster nodes.

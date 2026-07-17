@@ -1,19 +1,21 @@
 # Databases common stat (based on system.tables)
 
-Databases common stat (based on system.tables)
+This instruction belongs to report item `clickhouse_system.system_databases_ext`.
 
-## Collection contract
+## What this item shows
+- Databases common stat (based on system.tables).
+- The values come from ClickHouse system tables and describe the connected node or selected cluster scope.
 
-- Source: `query:legacy.system.system_databases_ext`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected object/row/byte growth or strong database imbalance.
 
-## Interpretation
+## Common fault causes
+- Retention failure, ingestion change, duplicated objects, or incomplete cleanup.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The table is informational and shaped by the SQL variant for the nearest preceding supported LTS.
+- Visibility follows the diagnostic user's privileges; absence caused by unsupported capability is reported separately.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Drill down through Top Tables and Storage Breakdown.
+- Compare with filesystem capacity and retention policy.

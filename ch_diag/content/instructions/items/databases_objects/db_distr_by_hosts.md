@@ -1,19 +1,21 @@
 # Distribution of databases across cluster hosts
 
-Distribution of databases across cluster hosts
+This instruction belongs to report item `databases_objects.db_distr_by_hosts`.
 
-## Collection contract
+## What this item shows
+- Distribution of databases across cluster hosts.
+- The result is a one-shot inventory from ClickHouse system metadata.
 
-- Source: `query:legacy.db.db_distr_by_hosts`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- databases missing/unexpected on nodes
 
-## Interpretation
+## Common fault causes
+- partial DDL, access failure, or topology drift; privilege/topology scope can also make inventory incomplete
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Rows are inventory/advisory evidence; successful SQL execution does not assert schema or storage health.
+- Cluster comparisons cover only reachable hosts in the selected cluster definition and visible objects.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Validate against intended schema/topology.
+- Correlate DDL, errors, replication, and storage before ALTER/ATTACH/DROP.

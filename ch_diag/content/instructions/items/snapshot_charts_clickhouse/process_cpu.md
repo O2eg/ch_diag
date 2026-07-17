@@ -1,19 +1,23 @@
 # ClickHouse Server Process CPU
 
-ClickHouse Server Process CPU
+This instruction belongs to report item `snapshot_charts_clickhouse.process_cpu`.
 
-## Collection contract
+## What this item shows
+- CPU consumed by the selected ClickHouse server PID in each interval.
+- Process CPU comes from /proc counter deltas; 100% means one fully occupied logical CPU, so a multithreaded server can exceed 100%.
 
-- Source: `metric:clickhouse.process_cpu`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Sustained use near total host CPU capacity.
+- Spikes aligned with higher query latency, merge backlog, or one dominant thread.
 
-## Interpretation
+## Common fault causes
+- Large scans, joins, aggregation, decompression, or expression evaluation.
+- Background merges/mutations or colocated workload competing for CPU.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No universal CPU severity is assigned.
+- PID restart or invalid counter decrease creates a gap, not a negative rate.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with host CPU utilization/load.
+- Use top Linux threads and query_thread_log to identify the responsible query or background pool.

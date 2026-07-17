@@ -10,7 +10,7 @@ from .errors import ChDiagError
 
 SCHEMA_PATH = Path(__file__).resolve().parent / "schemas" / "artifact-v5.schema.json"
 VALUE_KINDS = {"integer", "decimal", "timestamp", "date", "boolean", "json", "text"}
-SEMANTIC_ROLES = {"gauge", "duration", "state", "label"}
+SEMANTIC_ROLES = {"identifier", "gauge", "duration", "state", "label"}
 QUALITIES = {"exact", "estimated", "derived"}
 ENCODINGS = {"decimal_string", "json_string", "json_number", "json_boolean", "json_value"}
 COLUMN_REQUIRED_FIELDS = {
@@ -113,7 +113,12 @@ def column_descriptor(
             "none",
         )
     lower_name = name.casefold()
-    if lower_name.endswith("_bytes") or "bytes_on_disk" in lower_name or "memory_usage" in lower_name:
+    if value_kind in {"integer", "decimal"} and (
+        lower_name.endswith(("_id", "_hash"))
+        or lower_name in {"pid", "ppid", "tid", "thread_id"}
+    ):
+        role, quantity, unit = "identifier", "identifier", "none"
+    elif lower_name.endswith("_bytes") or "bytes_on_disk" in lower_name or "memory_usage" in lower_name:
         quantity, unit = "data_volume", "bytes"
     elif lower_name.endswith("_ms") or "duration_ms" in lower_name:
         quantity, unit, role = "milliseconds", "ms", "duration"

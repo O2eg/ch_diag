@@ -1,19 +1,27 @@
 # Network Transmit Throughput
 
-Network Transmit Throughput
+This instruction belongs to report item `snapshot_charts_os.os_network_transmit`. The item is backed by `os.network_transmit_throughput` (snapshot metric).
 
-## Collection contract
+## What this item shows
+- Outbound network throughput by interface over time.
+- Network send pressure during query results, replication, or backup streaming.
 
-- Source: `metric:os.network_transmit_throughput`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Transmit spikes from large result sets.
+- Replication network saturation.
+- Unexpected traffic from database host.
 
-## Interpretation
+## Common fault causes
+- Large client result sets.
+- Replicated-part sends and distributed-query traffic.
+- Backup export.
+- Monitoring or log shipping.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Rates are counter deltas over monotonic elapsed time; counter rollback becomes missing data rather than zero.
+- The loopback interface is intentionally excluded.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with large result queries, distributed sends, and replication queue delay.
+- Map interface to workload path.
+- Check interface errors, drops, retransmits, and external network telemetry when throughput looks capped.

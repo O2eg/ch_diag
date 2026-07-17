@@ -1,19 +1,27 @@
 # Kernel TCP Parameters
 
-Kernel IPv4 TCP parameters from sysctl.
+This instruction belongs to report item `operating_system.sysctl_tcp`. The item is backed by `operating_system.sysctl_tcp` (local host script).
 
-## Collection contract
+## What this item shows
+- Kernel IPv4 TCP settings relevant to connection handling and network behavior.
+- Runtime values for backlog, keepalive, retransmission, and buffer behavior.
 
-- Source: `script:os.sysctl_tcp`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Keepalive values inconsistent with load balancer or firewall timeouts.
+- Backlog or buffer limits too small for connection bursts.
+- Values that differ across primary and standby hosts.
 
-## Interpretation
+## Common fault causes
+- Default kernel networking settings.
+- Connection pool bursts.
+- Firewall idle timeouts.
+- Configuration drift.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned without proxy, firewall, kernel, and connection-rate context.
+- Only readable runtime `net.ipv4.tcp*` keys are shown; IPv6 and persistence are outside this item.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare TCP settings with application pool and proxy behavior.
+- Check connection pressure before changing network queues.
+- Persist approved network sysctl changes.

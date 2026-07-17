@@ -115,13 +115,13 @@ jobs:
             --duration 0.4 --interval 0.2 \
             --output-format json --out-dir reports/ssh-snapshots
 
-  clickhouse-legacy:
-    name: ClickHouse legacy ${{ matrix.boundary }}
+  clickhouse-lts:
+    name: ClickHouse LTS ${{ matrix.branch }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        boundary: ['20.3', '20.11', '21.1', '21.4', '21.8', '21.11', '22.2']
+        branch: ['20.3', '20.8', '21.3', '21.8', '22.3', '22.8', '23.3', '23.8', '24.3', '24.8', '25.3', '25.8', '26.3']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -129,15 +129,15 @@ jobs:
           python-version: '3.10'
       - if: runner.arch == 'X64'
         run: python -m pip install -e '.[test]'
-      - name: Run pinned legacy boundary
+      - name: Run pinned LTS branch
         if: runner.arch == 'X64'
         run: >-
-          python tools/run_legacy_clickhouse_matrix.py
-          --boundary '${{ matrix.boundary }}'
+          python tools/run_lts_clickhouse_matrix.py
+          --branch '${{ matrix.branch }}'
           --remove
       - name: Explain architecture skip
         if: runner.arch != 'X64'
-        run: echo "Legacy ClickHouse images are linux/amd64 only; runner is ${{ runner.arch }}"
+        run: echo "The oldest ClickHouse LTS images are linux/amd64 only; runner is ${{ runner.arch }}"
 
   clickhouse-multinode-25-8:
     name: ClickHouse 25.8 two replicas + Keeper

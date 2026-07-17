@@ -1,19 +1,20 @@
 # Replication Health Summary
 
-Queue, delay and active-replica state for local replicated tables.
+This instruction belongs to report item `dba_troubleshooting.replication_summary`.
 
-## Collection contract
+## What this item shows
+- Local replicated-table queue, delay, session/read-only, and active-replica state.
 
-- Source: `query:troubleshooting.replication_summary`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Growing queue/delay, read-only/session-expired state, lost/inactive replicas.
 
-## Interpretation
+## Common fault causes
+- Keeper/network outage, disk pressure, unavailable source, failing task, or merge backlog.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Thresholds are advisory and node scope does not claim cluster-wide health.
+- Transient backlog differs from persistent lag.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Inspect the worst table in replication_queue/replicas.
+- Correlate Keeper/errors, outcomes, disk, and network.

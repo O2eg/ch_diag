@@ -1,19 +1,26 @@
 # Disks And SSDs
 
-Hardware inventory from lshw class disk.
+This instruction belongs to report item `operating_system.lshw_disk`. The item is backed by `operating_system.lshw_disk` (local host script).
 
-## Collection contract
+## What this item shows
+- Physical or virtual disk inventory, model, size, serial, and capabilities where visible.
+- Device identity context for database storage.
 
-- Source: `script:os.lshw_disk`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected disk model, size, rotational flag, or serial.
+- Missing disks or disks on wrong tier.
+- Inventory unavailable due to permissions.
 
-## Interpretation
+## Common fault causes
+- Storage migration incomplete.
+- Wrong volume attached.
+- Cloud disk resized without filesystem expansion.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned because model, rotational state, and tier require an environment baseline.
+- lshw may omit disks without sufficient privileges; compare with the volume, mount, and filesystem items.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Map disks to mounts used by ClickHouse.
+- Compare disk identity with storage monitoring.
+- Confirm ClickHouse data, temporary, log, and backup paths use the intended storage tier.

@@ -1,19 +1,27 @@
 # Memory Usage
 
-Memory Usage
+This instruction belongs to report item `snapshot_charts_os.os_memory_usage`. The item is backed by `os.memory_usage` (snapshot metric).
 
-## Collection contract
+## What this item shows
+- A stacked accounting view of free RAM, page cache, shared memory, buffers, slab, selected kernel allocations, and a residual application bucket.
+- Whether memory pressure changes during the capture.
 
-- Source: `metric:os.memory_usage`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Free memory and reclaimable components changing quickly; use the separate RAM/swap chart for `MemAvailable`-based usage.
+- Swap-related pressure.
+- Memory drop during query bursts.
 
-## Interpretation
+## Common fault causes
+- Too many backends.
+- Large sorts/hashes.
+- Colocated services.
+- Kernel cache pressure.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- This chart is informational; the residual application bucket is not per-process attribution.
+- The stack is constructed to remain bounded by `MemTotal`; it is not a Linux PSI signal.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with Memory Information.
+- Check ClickHouse memory settings and connection count.
+- Inspect temp I/O when memory pressure aligns with spills.

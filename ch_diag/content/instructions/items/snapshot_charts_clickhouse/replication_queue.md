@@ -1,19 +1,21 @@
 # Replication Queue And Delay
 
-Replication Queue And Delay
+This instruction belongs to report item `snapshot_charts_clickhouse.replication_queue`.
 
-## Collection contract
+## What this item shows
+- Aggregate current replication queue and delay gauges from system.replicas.
+- It is backlog state, not completion rate.
 
-- Source: `metric:clickhouse.replication_queue`.
-- Timing: `every_snapshot`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Queue/delay growing over consecutive samples, read-only replicas, or backlog without transfer progress.
 
-## Interpretation
+## Common fault causes
+- Network/storage/Keeper trouble, unavailable source, merge pressure, or a failing task.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Short transient backlog can be normal.
+- Aggregation can hide one bad table, so drill-down is required.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Use Replication Summary/Queue for table rows.
+- Correlate with activity/outcomes, Keeper, disk, and network.

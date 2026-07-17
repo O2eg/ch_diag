@@ -1,19 +1,27 @@
 # CPU Utilization
 
-CPU Utilization
+This instruction belongs to report item `snapshot_charts_os.os_cpu_utilization`. The item is backed by `os.cpu_utilization` (snapshot metric).
 
-## Collection contract
+## What this item shows
+- CPU utilization over the snapshot window by mode.
+- User, system, iowait, idle, and related CPU percentages where collected.
 
-- Source: `metric:os.cpu_utilization`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Sustained high user or system CPU.
+- iowait rising with disk latency.
+- CPU saturation during SQL time spikes.
 
-## Interpretation
+## Common fault causes
+- CPU-bound queries.
+- Parallel workers.
+- Kernel overhead.
+- Storage waits showing as iowait.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The stacked modes use one CPU-tick denominator and should sum to approximately 100% after rounding.
+- Guest time is excluded from the denominator because Linux already includes it in user/nice counters.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Align peaks with Top SQL and backend_proc_cpu.
+- Separate CPU saturation from I/O wait.
+- Repeat capture during peak traffic.

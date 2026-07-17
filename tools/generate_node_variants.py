@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate explicit standalone-node SQL variants from legacy cluster queries.
+"""Generate explicit standalone-node SQL variants from diagnostic cluster queries.
 
 The runtime never rewrites a cluster query into a node query.  This maintainer
 tool creates reviewable SQL files and manifest variants instead.  Cluster-only
@@ -18,14 +18,14 @@ import yaml
 
 
 CLUSTER_ONLY_QUERY_IDS = {
-    "legacy.db.db_asymmetric_tbls",
-    "legacy.db.db_distr_by_hosts",
-    "legacy.db.db_distr_engines_by_hosts",
-    "legacy.db.db_distr_tbl_engines",
-    "legacy.db.db_distr_tbl_engines_by_hosts",
-    "legacy.db.db_symmetric_tbls",
-    "legacy.db.db_tbls_with_diff_ddls",
-    "legacy.queries.queries_by_hosts_common",
+    "diagnostics.db.db_asymmetric_tbls",
+    "diagnostics.db.db_distr_by_hosts",
+    "diagnostics.db.db_distr_engines_by_hosts",
+    "diagnostics.db.db_distr_tbl_engines",
+    "diagnostics.db.db_distr_tbl_engines_by_hosts",
+    "diagnostics.db.db_symmetric_tbls",
+    "diagnostics.db.db_tbls_with_diff_ddls",
+    "diagnostics.queries.queries_by_hosts_common",
 }
 
 _CLUSTER_TABLE = re.compile(
@@ -61,7 +61,7 @@ def generate(repo: Path) -> tuple[int, int]:
     generated_variants = 0
 
     for query_id, query in catalog["queries"].items():
-        if not query_id.startswith("legacy.") or query_id in CLUSTER_ONLY_QUERY_IDS:
+        if not query_id.startswith("diagnostics.") or query_id in CLUSTER_ONLY_QUERY_IDS:
             continue
         cluster_variants = [
             variant
@@ -79,7 +79,7 @@ def generate(repo: Path) -> tuple[int, int]:
             cluster_id = str(cluster_variant["id"])
             source_relative = Path(str(cluster_variant["sql_file"]))
             source_path = query_root / source_relative
-            node_relative = Path("legacy_node") / source_relative.relative_to("legacy")
+            node_relative = Path("node") / source_relative.relative_to("cluster")
             node_path = query_root / node_relative
             node_path.parent.mkdir(parents=True, exist_ok=True)
             node_path.write_text(

@@ -1,19 +1,21 @@
 # List of disks (based on system.disks)
 
-List of disks (based on system.disks)
+This instruction belongs to report item `clickhouse_system.system_disks`.
 
-## Collection contract
+## What this item shows
+- List of disks (based on system.disks).
+- The values come from ClickHouse system tables and describe the connected node or selected cluster scope.
 
-- Source: `query:legacy.system.system_disks`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Low free space, read-only/broken disks, unexpected paths, or large capacity imbalance.
 
-## Interpretation
+## Common fault causes
+- Data growth, missing mount, permissions, or storage outage.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The table is informational and shaped by the SQL variant for the nearest preceding supported LTS.
+- Visibility follows the diagnostic user's privileges; absence caused by unsupported capability is reported separately.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Map each ClickHouse disk to mount/device.
+- Preserve merge headroom and correlate with disk errors.

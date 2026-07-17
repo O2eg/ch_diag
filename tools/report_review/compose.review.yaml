@@ -1,0 +1,8 @@
+# Compose overlay used only by the human-review report harness.
+services:
+  node1:
+    volumes:
+      - ${CHDIAG_REVIEW_AUTHORIZED_KEYS:?set CHDIAG_REVIEW_AUTHORIZED_KEYS}:/test-ssh/authorized_keys:ro
+  node2:
+    volumes:
+      - ${CHDIAG_REVIEW_AUTHORIZED_KEYS:?set CHDIAG_REVIEW_AUTHORIZED_KEYS}:/test-ssh/authorized_keys:ro

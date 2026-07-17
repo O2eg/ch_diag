@@ -461,6 +461,7 @@ async def _execute_item(
                     column_descriptor(name, _script_source_type(raw_rows, name), [], index)
                     for index, name in enumerate(names)
                 ]
+                _apply_script_column_contract(columns, manifest)
                 payload = {
                     "kind": "table",
                     "columns": columns,
@@ -503,6 +504,31 @@ def _script_source_type(rows: list[dict[str, Any]], name: str) -> str:
     if isinstance(value, (dict, list)):
         return "JSON"
     return "String"
+
+
+def _apply_script_column_contract(
+    columns: list[dict[str, Any]],
+    manifest: dict[str, Any],
+) -> None:
+    declared = (manifest.get("result_contract") or {}).get("columns") or {}
+    if not isinstance(declared, dict):
+        return
+    allowed = {
+        "label",
+        "value_kind",
+        "semantic_role",
+        "quantity",
+        "quantity_ref",
+        "unit",
+        "unit_ref",
+        "quality",
+        "nullable",
+        "encoding",
+    }
+    for column in columns:
+        override = declared.get(column.get("name"))
+        if isinstance(override, dict):
+            column.update({key: value for key, value in override.items() if key in allowed})
 
 
 _SQL_LITERAL_RE = re.compile(r"'(?:''|\\.|[^'])*'")

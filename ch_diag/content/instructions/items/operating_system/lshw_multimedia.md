@@ -1,19 +1,25 @@
 # Multimedia Devices
 
-Hardware inventory from lshw class multimedia.
+This instruction belongs to report item `operating_system.lshw_multimedia`. The item is backed by `operating_system.lshw_multimedia` (local host script).
 
-## Collection contract
+## What this item shows
+- Multimedia/audio device inventory visible to lshw.
+- Non-database peripheral context.
 
-- Source: `script:os.lshw_multimedia`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected multimedia hardware on a database server.
+- Virtual audio devices exposed by host image.
 
-## Interpretation
+## Common fault causes
+- Generic VM template.
+- Desktop-class host image.
+- Hypervisor defaults.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned; multimedia devices are inventory-only evidence.
+- Empty output is normal on server systems.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Treat as inventory only.
+- Remove or disable devices only if policy requires it.
+- Ignore for ClickHouse performance triage.

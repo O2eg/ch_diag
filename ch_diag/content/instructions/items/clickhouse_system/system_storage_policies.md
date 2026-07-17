@@ -1,19 +1,21 @@
 # List of storage policies (based on system.storage_policies)
 
-List of storage policies (based on system.storage_policies)
+This instruction belongs to report item `clickhouse_system.system_storage_policies`.
 
-## Collection contract
+## What this item shows
+- List of storage policies (based on system.storage_policies).
+- The values come from ClickHouse system tables and describe the connected node or selected cluster scope.
 
-- Source: `query:legacy.system.system_storage_policies`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Missing disks/volumes, unexpected priority/move_factor, or node-to-node differences.
 
-## Interpretation
+## Common fault causes
+- Configuration drift, mount changes, or partial storage migration.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The table is informational and shaped by the SQL variant for the nearest preceding supported LTS.
+- Visibility follows the diagnostic user's privileges; absence caused by unsupported capability is reported separately.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Cross-check system.disks and OS mounts.
+- Verify free space and consistency before moving data.

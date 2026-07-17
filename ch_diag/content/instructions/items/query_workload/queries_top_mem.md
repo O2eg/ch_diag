@@ -1,19 +1,21 @@
 # Top queries by memory usage
 
-Top queries by memory usage
+This instruction belongs to report item `query_workload.queries_top_mem`.
 
-## Collection contract
+## What this item shows
+- Top queries by memory usage.
+- The table ranks finished query_log workload for DBA triage.
 
-- Source: `query:legacy.queries.queries_top_mem`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Queries near memory limits, repeated OOM victims, or high memory with modest output.
 
-## Interpretation
+## Common fault causes
+- Large joins/aggregations/sorts, concurrency, skew, or externalization disabled.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The ranking is bounded by query_log retention, sampling/settings, privileges, and the query LIMIT.
+- normalized_query_hash values are opaque exact UInt64 identifiers for correlation and must not be scaled or treated arithmetically.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Inspect plan/settings and concurrent work.
+- Compare MemoryTracking, RSS, and MemAvailable.

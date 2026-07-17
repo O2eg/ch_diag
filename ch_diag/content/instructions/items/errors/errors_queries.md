@@ -1,19 +1,21 @@
 # Failed queries (based on system.query_log)
 
-Failed queries (based on system.query_log)
+This instruction belongs to report item `errors.errors_queries`.
 
-## Collection contract
+## What this item shows
+- Failed queries (based on system.query_log).
+- The result preserves bounded ClickHouse error evidence for root-cause correlation.
 
-- Source: `query:legacy.errors.errors_queries`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- repeated query/user/code combinations
 
-## Interpretation
+## Common fault causes
+- bad SQL, limits, timeout, permissions, memory, or remote shard; secondary errors may follow an earlier root failure
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Collection status only says whether the diagnostic query ran; returned error rows are incident evidence, not an OK result.
+- An empty result may mean no matches, while unsupported, permission-denied, and log-retention gaps are distinct diagnostics.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Group by code/message and locate the first occurrence.
+- Correlate host/time with logs, query/table/replica, and resource charts.

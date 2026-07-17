@@ -1,19 +1,22 @@
 # ClickHouse Server Process I/O
 
-ClickHouse Server Process I/O
+This instruction belongs to report item `snapshot_charts_clickhouse.process_io`.
 
-## Collection contract
+## What this item shows
+- Read/write byte rates from /proc/PID/io for the selected ClickHouse server.
+- This kernel process accounting is independent from ClickHouse ProfileEvents and device iostat.
 
-- Source: `metric:clickhouse.process_io`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Throughput saturating the backing device, or sustained I/O while useful query throughput falls.
+- Permission/PID diagnostics instead of values.
 
-## Interpretation
+## Common fault causes
+- Wide scans, merges/mutations, inserts, temporary files, backups, cache misses, or excessive small parts.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Rates use actual elapsed time; reset counters create gaps.
+- Access failure is never converted into zero I/O.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with iostat throughput/utilization/latency.
+- Use top thread I/O and ClickHouse file I/O to separate process, thread, logical, and physical views.

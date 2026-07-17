@@ -310,6 +310,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "collection_mode": plan.collection_mode,
                 "target_scope": plan.target_scope,
                 "server_version": str(plan.server_version),
+                "sql_compatibility_lts": plan.compatibility_lts_version,
                 "items": [item.__dict__ for item in plan.items],
             }
             print(json.dumps(payload, ensure_ascii=False, indent=2))

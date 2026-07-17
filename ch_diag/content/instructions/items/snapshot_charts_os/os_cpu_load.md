@@ -1,19 +1,26 @@
 # CPU Load Average
 
-CPU Load Average
+This instruction belongs to report item `snapshot_charts_os.os_cpu_load`. The item is backed by `os.cpu_load` (snapshot metric).
 
-## Collection contract
+## What this item shows
+- System load average over the snapshot window.
+- Runnable or waiting task pressure relative to CPU capacity.
 
-- Source: `metric:os.cpu_load`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Load far above CPU count.
+- Load spike without matching CPU utilization.
+- Sustained load during database latency.
 
-## Interpretation
+## Common fault causes
+- CPU saturation.
+- Tasks waiting on I/O.
+- Host contention from non-ClickHouse processes.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- This chart is informational because load must be normalized against host CPU count and latency goals.
+- Linux load includes runnable tasks and tasks in uninterruptible sleep; it is not CPU percentage.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare load with CPU utilization and disk latency.
+- Check the host process list when load is unexplained; ClickHouse may not be the dominant runnable or blocked process.
+- Use CPU count from CPU Information for context.

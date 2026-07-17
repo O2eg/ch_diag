@@ -129,25 +129,26 @@ The compose file accepts these overrides:
 - `CHDIAG_TEST_PUBLIC_KEY_DIR` — directory containing `authorized_keys`.
 
 Use a distinct version tag and ports to keep custom current-version fixtures
-side by side. The pinned ClickHouse `20.3–22.2` compatibility boundary is
+side by side. The pinned ClickHouse `20.3–26.3` LTS compatibility matrix is
 handled by the dedicated runner below rather than this Dockerfile.
 
-## Legacy boundary matrix
+## LTS compatibility matrix
 
-On a native amd64 machine, start and test all pinned boundaries with:
+On a native amd64 machine, start and test all pinned LTS branches with:
 
 ```bash
-.venv/bin/python tools/run_legacy_clickhouse_matrix.py
+.venv/bin/python tools/run_lts_clickhouse_matrix.py
 ```
 
-Use `--boundary 20.3` to run one boundary; repeat the option to select several.
+Use `--branch 20.3` to run one branch; repeat the option to select several.
 Containers have stable names/ports and are retained by default, so later runs
 reuse them. Pass `--remove` for an ephemeral CI run. On ARM64 the command exits
-successfully with an explicit skip before pulling images because the legacy
+successfully with an explicit skip before pulling images because the oldest
 manifests are `linux/amd64` only.
 
-GitHub Actions executes the seven `20.3–22.2` boundaries as separate native
-X64 matrix jobs. Each job runs every applicable node-scope SQL item and a
+GitHub Actions executes the 13 LTS branches from `20.3` through `26.3` as
+separate native X64 matrix jobs. Each job runs every applicable node-scope SQL
+source and a
 packaged one-shot lifecycle smoke; result contents are not compared, but any
 syntax/runtime SQL error fails the job.
 

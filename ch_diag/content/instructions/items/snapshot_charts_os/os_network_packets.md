@@ -1,19 +1,27 @@
 # Network Packets
 
-Network Packets
+This instruction belongs to report item `snapshot_charts_os.os_network_packets`. The item is backed by `os.network_packets` (snapshot metric).
 
-## Collection contract
+## What this item shows
+- Packet rate by interface over time.
+- Small-packet or high-connection network behavior during snapshots.
 
-- Source: `metric:os.network_packets`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Very high packet rate without high throughput.
+- Packet spikes during connection storms.
+- Unexpected interface carrying traffic.
 
-## Interpretation
+## Common fault causes
+- Chatty application protocol.
+- Connection churn.
+- Monitoring bursts.
+- Network retries.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Receive and transmit packet rates are stacked per interface and use the same packets/second unit.
+- Loopback is excluded and counter rollback becomes missing data rather than zero.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with connection pressure.
+- Check pooler behavior.
+- Use external NIC counters for drops/errors.

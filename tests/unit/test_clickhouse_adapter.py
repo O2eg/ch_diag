@@ -40,6 +40,12 @@ def test_missing_identifier_is_unsupported_only_for_declared_capability() -> Non
     assert classify_error(error, optional_capability=True) == "unsupported"
 
 
+def test_missing_zookeeper_hosts_is_an_optional_capability_error() -> None:
+    error = RuntimeError("No hosts passed to ZooKeeper constructor")
+    assert classify_error(error, optional_capability=True) == "unsupported"
+    assert classify_error(error, optional_capability=False) == "error"
+
+
 def test_sensitive_query_cells_are_bounded_and_literal_redacted() -> None:
     result = {
         "kind": "table",

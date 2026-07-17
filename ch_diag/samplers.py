@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import math
-import re
 from typing import Any
 
+from .artifact_schema import column_descriptor
 from .linux_helpers import _cpu_row, _memory_row_from_values, _network_rows
+from .serialization import json_safe
 
 
 def utc_timestamp() -> str:
@@ -68,24 +69,7 @@ def parse_linux_proc(output: str) -> dict[str, Any]:
             "tx_packets": int(values[9]),
         }
 
-    disks: dict[str, dict[str, int]] = {}
-    for line in sections.get("__CH_DIAG_DISK__") or []:
-        fields = line.split()
-        if len(fields) < 14:
-            continue
-        device = fields[2]
-        if re.match(r"^(loop|ram|zram|fd)\d+", device):
-            continue
-        disks[device] = {
-            "read_ios": int(fields[3]),
-            "read_sectors": int(fields[5]),
-            "read_ms": int(fields[6]),
-            "write_ios": int(fields[7]),
-            "write_sectors": int(fields[9]),
-            "write_ms": int(fields[10]),
-            "io_ms": int(fields[12]),
-        }
-    return {"cpu": cpu, "load": load, "memory": memory, "network": network, "disk": disks}
+    return {"cpu": cpu, "load": load, "memory": memory, "network": network}
 
 
 def normalized_linux_rows(
@@ -99,7 +83,6 @@ def normalized_linux_rows(
         "os.memory": [memory_row],
         "os.cpu": [],
         "os.network": [],
-        "os.disk": [],
     }
     if previous is None or elapsed is None:
         return outputs
@@ -108,7 +91,6 @@ def normalized_linux_rows(
     cpu_row.update(current["load"])
     outputs["os.cpu"] = [cpu_row]
     outputs["os.network"] = _network_rows(previous["network"], current["network"], seconds)
-    outputs["os.disk"] = _disk_rows(previous["disk"], current["disk"], seconds)
     return outputs
 
 
@@ -143,6 +125,38 @@ def parse_clickhouse_process(output: str) -> dict[str, Any]:
             io[key.strip()] = int(value.strip())
         except ValueError:
             continue
+    thread_io: dict[int, tuple[int, int]] = {}
+    for line in sections.get("__CH_DIAG_PROCESS_THREAD_IO__") or []:
+        parts = line.split("\t")
+        if len(parts) != 3:
+            continue
+        try:
+            thread_io[int(parts[0])] = (int(parts[1]), int(parts[2]))
+        except ValueError:
+            continue
+    threads: dict[int, dict[str, Any]] = {}
+    for line in sections.get("__CH_DIAG_PROCESS_THREADS__") or []:
+        parts = line.split("\t", 5)
+        if len(parts) != 6:
+            continue
+        try:
+            thread_id = int(parts[0])
+        except ValueError:
+            continue
+        io_values = thread_io.get(thread_id)
+        try:
+            threads[thread_id] = {
+                "tid": thread_id,
+                "state": parts[1],
+                "starttime": int(parts[2]),
+                "cpu_ticks": int(parts[3]) + int(parts[4]),
+                "read_bytes": io_values[0] if io_values is not None else 0,
+                "write_bytes": io_values[1] if io_values is not None else 0,
+                "io_access": io_values is not None,
+                "thread_name": parts[5],
+            }
+        except ValueError:
+            continue
     return {
         "pid": pid,
         "hz": hz,
@@ -150,6 +164,7 @@ def parse_clickhouse_process(output: str) -> dict[str, Any]:
         "rss_bytes": max(int(fields[21]), 0) * page_size,
         "read_bytes": io.get("read_bytes"),
         "write_bytes": io.get("write_bytes"),
+        "threads": threads,
     }
 
 
@@ -183,45 +198,193 @@ def normalized_clickhouse_process_rows(
     return [row]
 
 
-def _disk_rows(
-    previous: dict[str, dict[str, int]],
-    current: dict[str, dict[str, int]],
-    seconds: float,
+def normalized_clickhouse_thread_rows(
+    previous: dict[str, Any] | None,
+    current: dict[str, Any],
+    elapsed: float | None,
 ) -> list[dict[str, Any]]:
+    """Return interval CPU and I/O rates for stable ClickHouse Linux TIDs."""
+
+    previous_threads = (previous or {}).get("threads") or {}
+    current_threads = current.get("threads") or {}
+    same_process = previous is not None and previous.get("pid") == current.get("pid")
+    seconds = max(float(elapsed or 0.0), 0.001)
     rows: list[dict[str, Any]] = []
-    for device in sorted(current):
-        old = previous.get(device)
-        new = current[device]
-        if old is None:
-            continue
-        read_ios = _counter_delta(old["read_ios"], new["read_ios"])
-        write_ios = _counter_delta(old["write_ios"], new["write_ios"])
-        read_ms = _counter_delta(old["read_ms"], new["read_ms"])
-        write_ms = _counter_delta(old["write_ms"], new["write_ms"])
-        io_ms = _counter_delta(old["io_ms"], new["io_ms"])
-        read_sectors = _counter_delta(old["read_sectors"], new["read_sectors"])
-        write_sectors = _counter_delta(old["write_sectors"], new["write_sectors"])
-        if None in (read_ios, write_ios, read_ms, write_ms, io_ms, read_sectors, write_sectors):
-            continue
-        total_ios = int(read_ios) + int(write_ios)
-        rows.append(
-            {
-                "device": device,
-                "read_bytes_per_sec": int(read_sectors) * 512 / seconds,
-                "write_bytes_per_sec": int(write_sectors) * 512 / seconds,
-                "read_iops": int(read_ios) / seconds,
-                "write_iops": int(write_ios) / seconds,
-                "util_pct": min(int(io_ms) / (seconds * 10.0), 100.0),
-                "await_ms": (int(read_ms) + int(write_ms)) / total_ios if total_ios else 0.0,
-                "r_await_ms": int(read_ms) / int(read_ios) if read_ios else 0.0,
-                "w_await_ms": int(write_ms) / int(write_ios) if write_ios else 0.0,
-            }
-        )
+    for tid in sorted(current_threads):
+        thread = current_threads[tid]
+        row: dict[str, Any] = {
+            "pid": current["pid"],
+            "tid": tid,
+            "thread_name": thread.get("thread_name") or "",
+            "state": thread.get("state") or "",
+            "starttime": thread.get("starttime"),
+            "io_access": bool(thread.get("io_access")),
+        }
+        old = previous_threads.get(tid) if same_process else None
+        if (
+            old is not None
+            and elapsed is not None
+            and old.get("starttime") == thread.get("starttime")
+        ):
+            tick_delta = _counter_delta(
+                int(old.get("cpu_ticks") or 0),
+                int(thread.get("cpu_ticks") or 0),
+            )
+            if tick_delta is not None:
+                row["cpu_pct"] = (
+                    tick_delta / max(int(current.get("hz") or 0), 1) / seconds * 100.0
+                )
+            if old.get("io_access") and thread.get("io_access"):
+                for key in ("read_bytes", "write_bytes"):
+                    delta = _counter_delta(
+                        int(old.get(key) or 0),
+                        int(thread.get(key) or 0),
+                    )
+                    if delta is not None:
+                        row[key + "_per_sec"] = delta / seconds
+        rows.append(row)
     return rows
+
+
+def clickhouse_thread_pool_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Aggregate one normalized TID sample by ClickHouse/Linux thread name."""
+
+    pools: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        name = str(row.get("thread_name") or "<unnamed>")
+        pool = pools.setdefault(
+            name,
+            {
+                "thread_name": name,
+                "thread_count": 0,
+                "io_access_threads": 0,
+            },
+        )
+        pool["thread_count"] += 1
+        if row.get("io_access"):
+            pool["io_access_threads"] += 1
+        for key in ("cpu_pct", "read_bytes_per_sec", "write_bytes_per_sec"):
+            value = _number(row.get(key))
+            if value is not None:
+                pool[key] = float(pool.get(key) or 0.0) + value
+    return [pools[name] for name in sorted(pools, key=str.casefold)]
 
 
 def _counter_delta(previous: int, current: int) -> int | None:
     return current - previous if current >= previous else None
+
+
+def build_table_result(metric: dict[str, Any], samples: list[dict[str, Any]]) -> dict[str, Any]:
+    """Aggregate repeated sampler/query rows into a bounded snapshot table."""
+
+    table = dict(metric.get("table") or {})
+    column_specs = list(table.get("columns") or [])
+    key_refs = [str(value) for value in table.get("key_refs") or []]
+    groups: dict[tuple[Any, ...], dict[str, Any]] = {}
+    sorted_samples = sorted(samples, key=lambda sample: str(sample.get("timestamp") or ""))
+    for sample_index, sample in enumerate(sorted_samples):
+        for row in sample.get("rows") or []:
+            key = tuple(_nested(row, ref) for ref in key_refs)
+            if not key_refs:
+                key = (len(groups),)
+            group = groups.setdefault(key, {"rows": [], "last": row, "samples": set()})
+            group["rows"].append(row)
+            group["last"] = row
+            group["samples"].add(sample_index)
+
+    columns: list[dict[str, Any]] = []
+    for index, spec in enumerate(column_specs):
+        name = str(spec.get("name") or spec.get("ref") or "value")
+        descriptor = column_descriptor(name, str(spec.get("source_type") or "String"), [], index)
+        for key in (
+            "label",
+            "semantic_role",
+            "quantity",
+            "unit",
+            "quality",
+            "nullable",
+        ):
+            if key in spec:
+                descriptor[key] = spec[key]
+        columns.append(descriptor)
+
+    rendered: list[tuple[list[Any], dict[str, Any]]] = []
+    drop_zero_refs = [str(value) for value in table.get("drop_zero_refs") or []]
+    for key, group in groups.items():
+        if drop_zero_refs and not any(
+            (_number(_nested(row, ref)) or 0.0) != 0.0
+            for row in group["rows"]
+            for ref in drop_zero_refs
+        ):
+            continue
+        values: list[Any] = []
+        for spec in column_specs:
+            if spec.get("role") == "key":
+                key_index = int(spec.get("key_index") or 0)
+                value = key[key_index] if key_index < len(key) else None
+            else:
+                ref = str(spec.get("value_ref") or spec.get("ref") or "")
+                transform = str(spec.get("transform") or "last")
+                raw_values = [_nested(row, ref) for row in group["rows"]] if ref else []
+                numeric = [value for raw in raw_values if (value := _number(raw)) is not None]
+                if transform == "avg":
+                    value = sum(numeric) / len(numeric) if numeric else None
+                elif transform == "max":
+                    value = max(numeric) if numeric else None
+                elif transform == "sum":
+                    value = sum(numeric) if numeric else None
+                elif transform == "sample_count":
+                    value = len(group["samples"])
+                else:
+                    value = _nested(group["last"], ref) if ref else None
+            values.append(value)
+        rendered.append((values, group))
+
+    sort = dict(table.get("sort") or {})
+    sort_name = str(sort.get("column") or "")
+    sort_index = next(
+        (index for index, column in enumerate(columns) if column["name"] == sort_name),
+        None,
+    )
+    if sort_index is not None:
+        descending = str(sort.get("direction") or "asc") == "desc"
+
+        def sort_key(entry: tuple[list[Any], dict[str, Any]]) -> tuple[int, float | str]:
+            value = entry[0][sort_index]
+            numeric = _number(value)
+            if numeric is not None:
+                return 0, numeric
+            return 1, str(value or "").casefold()
+
+        present = [entry for entry in rendered if entry[0][sort_index] is not None]
+        missing = [entry for entry in rendered if entry[0][sort_index] is None]
+        present.sort(key=sort_key, reverse=descending)
+        rendered = present + missing
+    limit = table.get("limit")
+    if isinstance(limit, int) and limit > 0:
+        rendered = rendered[:limit]
+    public_rows = [
+        [json_safe(value, columns[index]) for index, value in enumerate(values)]
+        for values, _group in rendered
+    ]
+    result = {
+        "kind": "table",
+        "columns": columns,
+        "rows": public_rows,
+        "row_count": len(public_rows),
+        "sample_count": len(sorted_samples),
+    }
+    if len(sorted_samples) >= 2:
+        result["delta_window"] = {
+            "start_time": str(sorted_samples[0].get("timestamp") or ""),
+            "finish_time": str(sorted_samples[-1].get("timestamp") or ""),
+            "duration_seconds": max(
+                float(sorted_samples[-1].get("monotonic") or 0.0)
+                - float(sorted_samples[0].get("monotonic") or 0.0),
+                0.0,
+            ),
+        }
+    return result
 
 
 def build_chart_result(metric: dict[str, Any], samples: list[dict[str, Any]]) -> dict[str, Any]:
@@ -229,6 +392,10 @@ def build_chart_result(metric: dict[str, Any], samples: list[dict[str, Any]]) ->
     series_specs = list(metric.get("series") or [])
     grouped: dict[tuple[str, tuple[str, ...]], dict[str, Any]] = {}
     previous: dict[tuple[int, tuple[str, ...]], tuple[float, float]] = {}
+    previous_ratios: dict[
+        tuple[int, tuple[str, ...]],
+        tuple[float, float, float],
+    ] = {}
     timeline = [str(sample["timestamp"]) for sample in samples]
     active_by_sample: list[set[tuple[str, tuple[str, ...]]]] = [set() for _ in samples]
 
@@ -245,7 +412,30 @@ def build_chart_result(metric: dict[str, Any], samples: list[dict[str, Any]]) ->
                 transform = str(spec.get("transform") or "gauge")
                 value: float | None = numeric
                 previous_key = (index, dimensions)
-                if transform in {"rate", "delta"}:
+                if transform == "ratio_of_deltas":
+                    denominator = _number(
+                        _nested(row, str(spec.get("denominator_ref") or ""))
+                    )
+                    if denominator is None:
+                        continue
+                    old_ratio = previous_ratios.get(previous_key)
+                    previous_ratios[previous_key] = (numeric, denominator, monotonic)
+                    if (
+                        old_ratio is None
+                        or numeric < old_ratio[0]
+                        or denominator < old_ratio[1]
+                    ):
+                        value = None
+                    else:
+                        denominator_delta = denominator - old_ratio[1]
+                        value = (
+                            (numeric - old_ratio[0])
+                            / denominator_delta
+                            * float(spec.get("scale") or 1.0)
+                            if denominator_delta > 0
+                            else None
+                        )
+                elif transform in {"rate", "delta"}:
                     old = previous.get(previous_key)
                     previous[previous_key] = (numeric, monotonic)
                     if old is None or numeric < old[0]:

@@ -1,19 +1,27 @@
 # Network Receive Throughput
 
-Network Receive Throughput
+This instruction belongs to report item `snapshot_charts_os.os_network_receive`. The item is backed by `os.network_receive_throughput` (snapshot metric).
 
-## Collection contract
+## What this item shows
+- Inbound network throughput by interface over time.
+- Network receive pressure during client, replication, or backup traffic.
 
-- Source: `metric:os.network_receive_throughput`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Receive spikes during replication or bulk load.
+- Unexpected traffic on database host.
+- Flatline or missing data for expected active interface.
 
-## Interpretation
+## Common fault causes
+- Client traffic burst.
+- Replica catch-up.
+- Backup restore.
+- Wrong interface monitored.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Rates are counter deltas over monotonic elapsed time; counter rollback becomes missing data rather than zero.
+- The loopback interface is intentionally excluded, so local TCP traffic may not appear.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Map interface to client/replication network.
+- Compare with replication lag and client waits.
+- Check external network metrics for drops or errors.

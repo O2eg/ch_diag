@@ -1,19 +1,25 @@
 # Kernel UDP Parameters
 
-Kernel IPv4 UDP parameters from sysctl.
+This instruction belongs to report item `operating_system.sysctl_udp`. The item is backed by `operating_system.sysctl_udp` (local host script).
 
-## Collection contract
+## What this item shows
+- Kernel IPv4 UDP memory and buffer settings.
+- Runtime UDP capacity context for DNS, metrics, logging, or extension traffic.
 
-- Source: `script:os.sysctl_udp`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- UDP buffer pressure or low limits on hosts with heavy metrics/logging traffic.
+- Values inconsistent with the platform baseline.
 
-## Interpretation
+## Common fault causes
+- Default sysctl values.
+- High monitoring packet volume.
+- Configuration drift.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned because ClickHouse itself does not normally use UDP and adjacent services differ by deployment.
+- Only readable runtime `net.ipv4.udp*` keys are shown; IPv6 and persistence are outside this item.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Confirm whether ClickHouse-adjacent tooling uses UDP on this host.
+- Compare with packet-drop evidence outside this report.
+- Persist approved changes through configuration management.

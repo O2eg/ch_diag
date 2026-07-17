@@ -12,7 +12,16 @@ import yaml
 
 from .errors import ContentIntegrityError, ContentValidationError
 from .runtime_config import CONTENT_SCHEMA_VERSION, EXECUTABLE_CONTENT_SUFFIXES, INTEGRITY_FILE
-from .versioning import ClickHouseVersion
+from .versioning import parse_lts_branch
+
+
+REQUIRED_INSTRUCTION_SECTIONS = (
+    "## What this item shows",
+    "## What to watch",
+    "## Common fault causes",
+    "## Automatic evaluation",
+    "## Checklist",
+)
 
 
 class UniqueKeySafeLoader(yaml.SafeLoader):
@@ -47,6 +56,7 @@ class ContentPack:
     document: dict[str, Any]
     provenance: dict[str, list[str]]
     checksum: str
+    supported_lts_versions: tuple[str, ...]
 
 
 def default_content_path() -> Path:
@@ -158,6 +168,8 @@ def load_content(content_path: str | Path | None = None) -> ContentPack:
         metric_catalog.get("sampler_providers"),
         "metrics.yaml:sampler_providers",
     )
+    query_catalog_meta = _mapping(query_catalog.get("query_catalog"), "query_catalog")
+    supported_lts_versions = _supported_lts_versions(query_catalog_meta)
     instructions: dict[str, str] = {}
     provenance: dict[str, list[str]] = {
         "report": ["report.yaml"],
@@ -180,7 +192,7 @@ def load_content(content_path: str | Path | None = None) -> ContentPack:
         "defaults": deepcopy(_mapping(report.get("defaults"), "report.yaml:defaults")),
         "sections": deepcopy(_mapping(report.get("sections"), "report.yaml:sections")),
         "catalogs": {
-            "queries": deepcopy(_mapping(query_catalog.get("query_catalog"), "query_catalog")),
+            "queries": deepcopy(query_catalog_meta),
             "scripts": deepcopy(_mapping(script_catalog.get("script_catalog"), "script_catalog")),
             "metrics": deepcopy(_mapping(metric_catalog.get("metric_catalog"), "metric_catalog")),
             "python": {},
@@ -208,6 +220,7 @@ def load_content(content_path: str | Path | None = None) -> ContentPack:
         document=document,
         provenance=provenance,
         checksum=checksum,
+        supported_lts_versions=supported_lts_versions,
     )
     validate_content(pack)
     return pack
@@ -219,6 +232,26 @@ def _mapping(value: Any, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ContentValidationError(f"{label} must be a mapping")
     return value
+
+
+def _supported_lts_versions(query_catalog: dict[str, Any]) -> tuple[str, ...]:
+    raw = query_catalog.get("supported_lts_versions")
+    if not isinstance(raw, list) or not raw:
+        raise ContentValidationError(
+            "query_catalog.supported_lts_versions must be a non-empty list"
+        )
+    branches = tuple(str(value) for value in raw)
+    if len(set(branches)) != len(branches):
+        raise ContentValidationError("query_catalog has duplicate LTS branches")
+    try:
+        parsed = tuple(parse_lts_branch(branch) for branch in branches)
+    except ValueError as exc:
+        raise ContentValidationError("query_catalog has an invalid LTS branch") from exc
+    if parsed != tuple(sorted(parsed)):
+        raise ContentValidationError(
+            "query_catalog.supported_lts_versions must be in ascending order"
+        )
+    return branches
 
 
 def iter_report_items(content: ContentPack) -> Iterator[tuple[str, str, str, dict[str, Any]]]:
@@ -247,6 +280,7 @@ def validate_content(content: ContentPack) -> None:
         raise ContentValidationError("report id and title are required")
     allowed_tags = set(report_meta.get("allowed_item_tags") or [])
     seen: set[str] = set()
+    query_item_consumers: dict[str, list[str]] = {}
     for section_id, _item_key, item_id, item in iter_report_items(content):
         if item_id in seen:
             raise ContentValidationError(f"duplicate report item {item_id}")
@@ -263,6 +297,13 @@ def validate_content(content: ContentPack) -> None:
         }[source_kind]
         if source_id not in source_catalog:
             raise ContentValidationError(f"{item_id} references missing {source_kind} {source_id!r}")
+        query_id = None
+        if source_kind == "query":
+            query_id = source_id
+        elif source_kind == "metric":
+            query_id = content.metrics[source_id].get("source_query")
+        if query_id:
+            query_item_consumers.setdefault(str(query_id), []).append(item_id)
         tags = item.get("tags") or []
         if not isinstance(tags, list) or not tags:
             raise ContentValidationError(f"{item_id} must define at least one tag")
@@ -272,7 +313,27 @@ def validate_content(content: ContentPack) -> None:
         state = item.get("state", "collapsed")
         if state not in {"expanded", "collapsed", "hidden"}:
             raise ContentValidationError(f"{item_id} has invalid state {state!r}")
+        _validate_instruction(item_id, content.instructions.get(item_id))
 
+    extra_instructions = sorted(set(content.instructions) - seen)
+    if extra_instructions:
+        raise ContentValidationError(
+            f"instructions exist for unknown report items: {extra_instructions!r}"
+        )
+
+    shared_item_queries = {
+        query_id: item_ids
+        for query_id, item_ids in query_item_consumers.items()
+        if len(item_ids) > 1
+    }
+    if shared_item_queries:
+        query_id, item_ids = next(iter(shared_item_queries.items()))
+        raise ContentValidationError(
+            f"query {query_id!r} is shared by report items {item_ids!r}; "
+            "each SQL-backed item must own a dedicated query"
+        )
+
+    sql_file_queries: dict[str, set[str]] = {}
     for query_id, query in content.queries.items():
         _validate_source_contract(query_id, query, expected_kind="table")
         requirements = _mapping(query.get("requires"), f"query {query_id}.requires")
@@ -292,6 +353,7 @@ def validate_content(content: ContentPack) -> None:
             if not scopes or not scopes <= {"node", "cluster"}:
                 raise ContentValidationError(f"query {query_id} variant has invalid scopes")
             sql_path = _safe_path(content.path / "queries", str(variant["sql_file"]), query_id)
+            sql_file_queries.setdefault(str(variant["sql_file"]), set()).add(query_id)
             if not sql_path.is_file():
                 raise ContentValidationError(f"query {query_id} SQL file is missing: {sql_path}")
             sql = sql_path.read_text(encoding="utf-8")
@@ -300,19 +362,42 @@ def validate_content(content: ContentPack) -> None:
                 raise ContentValidationError(
                     f"query {query_id} node variant contains a cluster placeholder"
                 )
-            try:
-                minimum = ClickHouseVersion.parse(str(variant.get("min_ch_version", "0")))
-                maximum_value = variant.get("max_ch_version")
-                maximum = (
-                    ClickHouseVersion.parse(str(maximum_value))
-                    if maximum_value is not None
-                    else None
+            if "min_ch_version" in variant or "max_ch_version" in variant:
+                raise ContentValidationError(
+                    f"query {query_id} uses a non-LTS version range"
                 )
-            except ValueError as exc:
-                raise ContentValidationError(f"query {query_id} has invalid version range") from exc
-            if maximum is not None and maximum <= minimum:
-                raise ContentValidationError(f"query {query_id} has an empty version range")
-        _validate_variant_ranges(query_id, variants)
+            lts_versions = variant.get("lts_versions")
+            if not isinstance(lts_versions, list) or not lts_versions:
+                raise ContentValidationError(
+                    f"query {query_id} variant must declare lts_versions"
+                )
+            normalized = [str(branch) for branch in lts_versions]
+            if len(set(normalized)) != len(normalized):
+                raise ContentValidationError(
+                    f"query {query_id} variant has duplicate LTS branches"
+                )
+            unknown = sorted(set(normalized) - set(content.supported_lts_versions))
+            if unknown:
+                raise ContentValidationError(
+                    f"query {query_id} variant has unsupported LTS branches: {unknown!r}"
+                )
+        _validate_variant_lts(
+            query_id,
+            variants,
+            content.supported_lts_versions,
+        )
+
+    shared_sql_files = {
+        sql_file: sorted(query_ids)
+        for sql_file, query_ids in sql_file_queries.items()
+        if len(query_ids) > 1
+    }
+    if shared_sql_files:
+        sql_file, query_ids = next(iter(shared_sql_files.items()))
+        raise ContentValidationError(
+            f"SQL file {sql_file!r} is shared by queries {query_ids!r}; "
+            "queries owned by different items must use separate files"
+        )
 
     for script_id, script in content.scripts.items():
         _validate_source_contract(script_id, script, expected_kind=None)
@@ -344,8 +429,14 @@ def validate_content(content: ContentPack) -> None:
                     raise ContentValidationError(
                         f"sampler {provider_id} script is missing: {script_path}"
                     )
+    query_metric_consumers: dict[str, list[str]] = {}
     for metric_id, metric in content.metrics.items():
-        _validate_source_contract(metric_id, metric, expected_kind="chart")
+        _validate_source_contract(metric_id, metric, expected_kind=None)
+        result_kind = (metric.get("result_contract") or {}).get("kind")
+        if result_kind not in {"chart", "table"}:
+            raise ContentValidationError(
+                f"metric {metric_id} result contract must be chart or table"
+            )
         sources = [key for key in ("source_query", "source_sampler") if metric.get(key)]
         if len(sources) != 1:
             raise ContentValidationError(
@@ -355,18 +446,79 @@ def validate_content(content: ContentPack) -> None:
             raise ContentValidationError(
                 f"metric {metric_id} references missing query {metric.get('source_query')!r}"
             )
+        if metric.get("source_query"):
+            query_metric_consumers.setdefault(str(metric["source_query"]), []).append(metric_id)
         if metric.get("source_sampler") not in {None, *declared_outputs}:
             raise ContentValidationError(
                 f"metric {metric_id} references missing sampler output {metric.get('source_sampler')!r}"
             )
-        series = metric.get("series") or []
-        if not isinstance(series, list) or not series:
-            raise ContentValidationError(f"metric {metric_id} must define series")
-        for entry in series:
-            if not isinstance(entry, dict) or not entry.get("value_ref"):
-                raise ContentValidationError(f"metric {metric_id} has invalid series")
-            if entry.get("transform", "gauge") not in {"gauge", "rate", "delta"}:
-                raise ContentValidationError(f"metric {metric_id} has invalid transform")
+        if result_kind == "chart":
+            series = metric.get("series") or []
+            if not isinstance(series, list) or not series:
+                raise ContentValidationError(f"metric {metric_id} must define series")
+            for entry in series:
+                if not isinstance(entry, dict) or not entry.get("value_ref"):
+                    raise ContentValidationError(f"metric {metric_id} has invalid series")
+                if entry.get("transform", "gauge") not in {
+                    "gauge",
+                    "rate",
+                    "delta",
+                    "ratio_of_deltas",
+                }:
+                    raise ContentValidationError(f"metric {metric_id} has invalid transform")
+                if (
+                    entry.get("transform") == "ratio_of_deltas"
+                    and not entry.get("denominator_ref")
+                ):
+                    raise ContentValidationError(
+                        f"metric {metric_id} ratio_of_deltas series needs denominator_ref"
+                    )
+        else:
+            table = metric.get("table") or {}
+            columns = table.get("columns") or []
+            if not isinstance(columns, list) or not columns:
+                raise ContentValidationError(f"metric {metric_id} must define table columns")
+            if any(not isinstance(column, dict) or not column.get("name") for column in columns):
+                raise ContentValidationError(f"metric {metric_id} has invalid table columns")
+
+    shared_metric_queries = {
+        query_id: metric_ids
+        for query_id, metric_ids in query_metric_consumers.items()
+        if len(metric_ids) > 1
+    }
+    if shared_metric_queries:
+        query_id, metric_ids = next(iter(shared_metric_queries.items()))
+        raise ContentValidationError(
+            f"query {query_id!r} is shared by metrics {metric_ids!r}; "
+            "each SQL-backed metric must own a dedicated query"
+        )
+
+
+def _validate_instruction(item_id: str, instruction: str | None) -> None:
+    if not instruction or not instruction.strip():
+        raise ContentValidationError(f"{item_id} must have a non-empty Markdown instruction")
+    if not instruction.lstrip().startswith("# "):
+        raise ContentValidationError(f"{item_id} instruction must start with a Markdown title")
+
+    positions: list[int] = []
+    for heading in REQUIRED_INSTRUCTION_SECTIONS:
+        if instruction.count(heading) != 1:
+            raise ContentValidationError(
+                f"{item_id} instruction must contain exactly one {heading!r} section"
+            )
+        positions.append(instruction.index(heading))
+    if positions != sorted(positions):
+        raise ContentValidationError(
+            f"{item_id} instruction sections must use the required DBA review order"
+        )
+
+    boundaries = positions[1:] + [len(instruction)]
+    for heading, start, end in zip(REQUIRED_INSTRUCTION_SECTIONS, positions, boundaries):
+        body = instruction[start + len(heading) : end]
+        if not any(line.startswith("- ") and line[2:].strip() for line in body.splitlines()):
+            raise ContentValidationError(
+                f"{item_id} instruction section {heading!r} must contain guidance bullets"
+            )
 
 
 def _validate_source_contract(
@@ -376,7 +528,7 @@ def _validate_source_contract(
     expected_kind: str | None,
 ) -> None:
     scope = source.get("collection_scope")
-    if scope not in {"once", "every_snapshot"}:
+    if scope not in {"once", "every_snapshot", "window_end"}:
         raise ContentValidationError(
             f"source {source_id} has invalid collection_scope {scope!r}"
         )
@@ -397,28 +549,63 @@ def _validate_source_contract(
         "raw_then_renderer_scaled",
     }:
         raise ContentValidationError(f"source {source_id} has invalid unit policy")
+    declared_columns = result_contract.get("columns")
+    if declared_columns is not None:
+        if result_contract.get("kind") != "table" or not isinstance(declared_columns, dict):
+            raise ContentValidationError(
+                f"source {source_id} result columns require a table mapping"
+            )
+        allowed_descriptor_keys = {
+            "label",
+            "value_kind",
+            "semantic_role",
+            "quantity",
+            "quantity_ref",
+            "unit",
+            "unit_ref",
+            "quality",
+            "nullable",
+            "encoding",
+        }
+        for column_name, descriptor in declared_columns.items():
+            if not str(column_name) or not isinstance(descriptor, dict):
+                raise ContentValidationError(
+                    f"source {source_id} has an invalid declared column descriptor"
+                )
+            unknown = sorted(set(descriptor) - allowed_descriptor_keys)
+            if unknown:
+                raise ContentValidationError(
+                    f"source {source_id} column {column_name} has unknown fields: {unknown!r}"
+                )
 
 
-def _validate_variant_ranges(query_id: str, variants: list[dict[str, Any]]) -> None:
+def _validate_variant_lts(
+    query_id: str,
+    variants: list[dict[str, Any]],
+    supported_lts_versions: tuple[str, ...],
+) -> None:
     for scope in ("node", "cluster"):
-        ranged = []
+        assigned: dict[str, str] = {}
+        scope_declared = False
         for variant in variants:
             if scope not in set(variant.get("scopes") or ["node", "cluster"]):
                 continue
-            minimum = ClickHouseVersion.parse(str(variant.get("min_ch_version", "0")))
-            maximum_value = variant.get("max_ch_version")
-            maximum = (
-                ClickHouseVersion.parse(str(maximum_value))
-                if maximum_value is not None
-                else None
-            )
-            ranged.append((minimum, maximum, str(variant["id"])))
-        ranged.sort(key=lambda entry: entry[0])
-        for left, right in zip(ranged, ranged[1:]):
-            if left[1] is None or right[0] < left[1]:
+            scope_declared = True
+            variant_id = str(variant["id"])
+            for branch in variant.get("lts_versions") or []:
+                branch = str(branch)
+                previous = assigned.get(branch)
+                if previous is not None:
+                    raise ContentValidationError(
+                        f"query {query_id} has overlapping {scope} LTS variants "
+                        f"{previous!r} and {variant_id!r} for {branch}"
+                    )
+                assigned[branch] = variant_id
+        if scope_declared:
+            missing = [branch for branch in supported_lts_versions if branch not in assigned]
+            if missing:
                 raise ContentValidationError(
-                    f"query {query_id} has overlapping {scope} variants "
-                    f"{left[2]!r} and {right[2]!r}"
+                    f"query {query_id} has no {scope} variant for LTS branches: {missing!r}"
                 )
 
 

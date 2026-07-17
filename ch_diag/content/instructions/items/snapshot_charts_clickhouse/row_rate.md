@@ -1,19 +1,21 @@
 # ClickHouse Row Rate
 
-ClickHouse Row Rate
+This instruction belongs to report item `snapshot_charts_clickhouse.row_rate`.
 
-## Collection contract
+## What this item shows
+- Selected-row and inserted-row rates from cumulative ClickHouse counters.
+- Rows processed by the server are not the same as client result rows.
 
-- Source: `metric:clickhouse.row_rate`.
-- Timing: `every_snapshot`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Selected rows per query increasing, insert rate collapsing, or abrupt workload-mix changes.
 
-## Interpretation
+## Common fault causes
+- Weak primary-key pruning, broad scans, FINAL, high-cardinality joins, tiny insert batches, retries, or ingestion stalls.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Rates are reset-safe and use actual elapsed time.
+- No deployment-independent row-rate threshold exists.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Normalize by query rate.
+- Compare with selected bytes/parts/marks, part creation, and merges.

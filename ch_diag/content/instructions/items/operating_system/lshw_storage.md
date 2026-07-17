@@ -1,19 +1,26 @@
 # Storage Controllers
 
-Hardware inventory from lshw class storage.
+This instruction belongs to report item `operating_system.lshw_storage`. The item is backed by `operating_system.lshw_storage` (local host script).
 
-## Collection contract
+## What this item shows
+- Storage controller inventory and driver context.
+- Controller-level evidence for disks used by ClickHouse.
 
-- Source: `script:os.lshw_storage`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected controller type or driver.
+- Controller missing after host migration.
+- Virtual storage controller not matching performance tier.
 
-## Interpretation
+## Common fault causes
+- VM storage adapter change.
+- Driver issue.
+- Hardware replacement.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned without an expected storage-controller baseline.
+- Empty/partial output does not prove that storage is absent; virtual and unprivileged environments commonly hide controller details.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with disk and mount evidence.
+- Check controller driver/firmware during I/O incidents.
+- Confirm storage tier matches the database role.

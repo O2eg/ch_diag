@@ -20,11 +20,17 @@ sampler_providers:
         source_file: samplers/linux_proc.sh
       os.disk:
         collection_scope: every_snapshot
-        source_file: samplers/linux_proc.sh
+        source_file: samplers/linux_iostat.sh
       os.network:
         collection_scope: every_snapshot
         source_file: samplers/linux_proc.sh
       clickhouse.process:
+        collection_scope: every_snapshot
+        source_file: samplers/clickhouse_process.sh
+      clickhouse.threads:
+        collection_scope: every_snapshot
+        source_file: samplers/clickhouse_process.sh
+      clickhouse.thread_pools:
         collection_scope: every_snapshot
         source_file: samplers/clickhouse_process.sh
 metrics:
@@ -88,6 +94,152 @@ metrics:
     result_contract:
       kind: chart
       unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.thread_cpu_top:
+    title: Top ClickHouse Linux Threads By CPU
+    source_sampler: clickhouse.threads
+    display:
+      default_sort:
+        column: avg_cpu_pct
+        direction: desc
+    table:
+      key_refs: [tid, starttime]
+      drop_zero_refs: [cpu_pct]
+      limit: 50
+      sort: {column: avg_cpu_pct, direction: desc}
+      columns:
+      - {name: tid, role: key, key_index: 0, source_type: UInt64, label: Linux TID}
+      - {name: thread_start_ticks, role: key, key_index: 1, source_type: UInt64}
+      - {name: thread_name, ref: thread_name, transform: last, source_type: String}
+      - {name: state, ref: state, transform: last, source_type: String}
+      - {name: avg_cpu_pct, value_ref: cpu_pct, transform: avg, source_type: Float64, quantity: percentage, unit: '%', quality: derived}
+      - {name: max_cpu_pct, value_ref: cpu_pct, transform: max, source_type: Float64, quantity: percentage, unit: '%', quality: derived}
+      - {name: samples, transform: sample_count, source_type: UInt64, quality: derived}
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  clickhouse.thread_io_top:
+    title: Top ClickHouse Linux Threads By I/O
+    source_sampler: clickhouse.threads
+    requires_fields: [read_bytes_per_sec, write_bytes_per_sec]
+    display:
+      default_sort:
+        column: avg_read_bytes_per_sec
+        direction: desc
+    table:
+      key_refs: [tid, starttime]
+      drop_zero_refs: [read_bytes_per_sec, write_bytes_per_sec]
+      limit: 50
+      sort: {column: avg_read_bytes_per_sec, direction: desc}
+      columns:
+      - {name: tid, role: key, key_index: 0, source_type: UInt64, label: Linux TID}
+      - {name: thread_start_ticks, role: key, key_index: 1, source_type: UInt64}
+      - {name: thread_name, ref: thread_name, transform: last, source_type: String}
+      - {name: io_access, ref: io_access, transform: last, source_type: Bool}
+      - {name: avg_read_bytes_per_sec, value_ref: read_bytes_per_sec, transform: avg, source_type: Float64, quantity: data_rate, unit: bytes/s, quality: derived}
+      - {name: avg_write_bytes_per_sec, value_ref: write_bytes_per_sec, transform: avg, source_type: Float64, quantity: data_rate, unit: bytes/s, quality: derived}
+      - {name: max_read_bytes_per_sec, value_ref: read_bytes_per_sec, transform: max, source_type: Float64, quantity: data_rate, unit: bytes/s, quality: derived}
+      - {name: max_write_bytes_per_sec, value_ref: write_bytes_per_sec, transform: max, source_type: Float64, quantity: data_rate, unit: bytes/s, quality: derived}
+      - {name: samples, transform: sample_count, source_type: UInt64, quality: derived}
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  clickhouse.thread_pool_usage:
+    title: ClickHouse Thread And Pool Resource Usage
+    source_sampler: clickhouse.thread_pools
+    display:
+      default_sort:
+        column: avg_cpu_pct
+        direction: desc
+    table:
+      key_refs: [thread_name]
+      limit: 100
+      sort: {column: avg_cpu_pct, direction: desc}
+      columns:
+      - {name: thread_name, role: key, key_index: 0, source_type: String}
+      - {name: avg_threads, value_ref: thread_count, transform: avg, source_type: Float64, quantity: threads, unit: count, quality: derived}
+      - {name: max_threads, value_ref: thread_count, transform: max, source_type: UInt64, quantity: threads, unit: count, quality: derived}
+      - {name: avg_cpu_pct, value_ref: cpu_pct, transform: avg, source_type: Nullable(Float64), quantity: percentage, unit: '%', quality: derived}
+      - {name: max_cpu_pct, value_ref: cpu_pct, transform: max, source_type: Nullable(Float64), quantity: percentage, unit: '%', quality: derived}
+      - {name: avg_read_bytes_per_sec, value_ref: read_bytes_per_sec, transform: avg, source_type: Nullable(Float64), quantity: data_rate, unit: bytes/s, quality: derived}
+      - {name: avg_write_bytes_per_sec, value_ref: write_bytes_per_sec, transform: avg, source_type: Nullable(Float64), quantity: data_rate, unit: bytes/s, quality: derived}
+      - {name: max_io_access_threads, value_ref: io_access_threads, transform: max, source_type: UInt64, quantity: threads, unit: count, quality: derived}
+      - {name: samples, transform: sample_count, source_type: UInt64, quality: derived}
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: host_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  clickhouse.logged_thread_cpu_top:
+    title: Top Logged Query Threads By CPU
+    source_query: metrics.logged_thread_cpu_top
+    display:
+      default_sort:
+        column: cpu_seconds
+        direction: desc
+    table:
+      drop_zero_refs: [cpu_seconds]
+      limit: 50
+      sort: {column: cpu_seconds, direction: desc}
+      columns:
+      - {name: host, ref: host, transform: last, source_type: String}
+      - {name: event_time, ref: event_time, transform: last, source_type: DateTime}
+      - {name: tid, ref: thread_id, transform: last, source_type: UInt64, label: Linux TID}
+      - {name: query_id, ref: query_id, transform: last, source_type: String}
+      - {name: thread_name, ref: thread_name, transform: last, source_type: String}
+      - {name: user, ref: user, transform: last, source_type: String}
+      - {name: query_duration_ms, ref: query_duration_ms, transform: last, source_type: UInt64}
+      - {name: cpu_seconds, ref: cpu_seconds, transform: last, source_type: Float64, quantity: seconds, unit: s, quality: derived}
+      - {name: cpu_wait_seconds, ref: cpu_wait_seconds, transform: last, source_type: Float64, quantity: seconds, unit: s, quality: derived}
+      - {name: memory_usage, ref: memory_usage, transform: last, source_type: Int64}
+      - {name: peak_memory_usage, ref: peak_memory_usage, transform: last, source_type: Int64}
+      - {name: query, ref: query, transform: last, source_type: String}
+    collection_scope: window_end
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
+      may_be_empty: true
+  clickhouse.logged_thread_io_top:
+    title: Top Logged Query Threads By I/O
+    source_query: metrics.logged_thread_io_top
+    display:
+      default_sort:
+        column: os_io_bytes
+        direction: desc
+    table:
+      drop_zero_refs: [os_io_bytes]
+      limit: 50
+      sort: {column: os_io_bytes, direction: desc}
+      columns:
+      - {name: host, ref: host, transform: last, source_type: String}
+      - {name: event_time, ref: event_time, transform: last, source_type: DateTime}
+      - {name: tid, ref: thread_id, transform: last, source_type: UInt64, label: Linux TID}
+      - {name: query_id, ref: query_id, transform: last, source_type: String}
+      - {name: thread_name, ref: thread_name, transform: last, source_type: String}
+      - {name: user, ref: user, transform: last, source_type: String}
+      - {name: os_read_bytes, ref: os_read_bytes, transform: last, source_type: UInt64}
+      - {name: os_write_bytes, ref: os_write_bytes, transform: last, source_type: UInt64}
+      - {name: os_io_bytes, ref: os_io_bytes, transform: last, source_type: UInt64}
+      - {name: peak_memory_usage, ref: peak_memory_usage, transform: last, source_type: Int64}
+      - {name: query, ref: query, transform: last, source_type: String}
+    collection_scope: window_end
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: table
+      unit_policy: raw
       may_be_empty: true
   os.cpu_utilization:
     title: CPU Utilization
@@ -420,7 +572,7 @@ metrics:
       may_be_empty: true
   clickhouse.query_rate:
     title: ClickHouse Query Rate
-    source_query: metrics.events
+    source_query: metrics.query_rate
     partition_by:
     - host
     series:
@@ -430,6 +582,10 @@ metrics:
       unit: queries/s
     - name: selects
       value_ref: selects
+      transform: rate
+      unit: queries/s
+    - name: inserts
+      value_ref: inserts
       transform: rate
       unit: queries/s
     - name: failed
@@ -448,7 +604,7 @@ metrics:
       may_be_empty: true
   clickhouse.row_rate:
     title: ClickHouse Row Rate
-    source_query: metrics.events
+    source_query: metrics.row_rate
     partition_by:
     - host
     series:
@@ -472,7 +628,7 @@ metrics:
       may_be_empty: true
   clickhouse.byte_rate:
     title: ClickHouse Data Throughput
-    source_query: metrics.events
+    source_query: metrics.byte_rate
     partition_by:
     - host
     series:
@@ -496,7 +652,7 @@ metrics:
       may_be_empty: true
   clickhouse.activity:
     title: ClickHouse Current Activity
-    source_query: metrics.gauges
+    source_query: metrics.activity
     partition_by:
     - host
     series:
@@ -528,7 +684,7 @@ metrics:
       may_be_empty: true
   clickhouse.memory:
     title: ClickHouse Memory Tracking
-    source_query: metrics.gauges
+    source_query: metrics.memory
     partition_by:
     - host
     series:
@@ -548,7 +704,7 @@ metrics:
       may_be_empty: true
   clickhouse.replication_activity:
     title: Replication Fetch And Send Activity
-    source_query: metrics.gauges
+    source_query: metrics.replication_activity
     partition_by:
     - host
     series:
@@ -572,7 +728,7 @@ metrics:
       may_be_empty: true
   clickhouse.replication_queue:
     title: Replication Queue And Delay
-    source_query: metrics.replication
+    source_query: metrics.replication_queue
     partition_by:
     - host
     series:
@@ -596,7 +752,7 @@ metrics:
       may_be_empty: true
   clickhouse.part_creation_rate:
     title: New Data Parts Per Second
-    source_query: metrics.part_creation
+    source_query: metrics.part_creation_rate
     partition_by:
     - host
     series:
@@ -616,7 +772,7 @@ metrics:
       may_be_empty: true
   clickhouse.keeper_events:
     title: Keeper And ZooKeeper Event Rate
-    source_query: metrics.events
+    source_query: metrics.keeper_events
     partition_by:
     - host
     series:
@@ -629,6 +785,235 @@ metrics:
       unit: count
     collection_scope: every_snapshot
     cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.query_latency:
+    title: ClickHouse Average Query Latency
+    source_query: metrics.query_latency
+    partition_by: [host]
+    series:
+    - name: average query latency
+      value_ref: query_time_us
+      denominator_ref: queries
+      transform: ratio_of_deltas
+      scale: 0.001
+      unit: ms
+    chart:
+      kind: line
+      unit: ms
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.connections:
+    title: ClickHouse Client Connections
+    source_query: metrics.connections
+    partition_by: [host]
+    series:
+    - {name: TCP, value_ref: tcp_connections, transform: gauge, unit: count}
+    - {name: HTTP, value_ref: http_connections, transform: gauge, unit: count}
+    chart:
+      kind: stacked_area
+      unit: count
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.selected_parts_rate:
+    title: Selected Parts, Marks And Ranges
+    source_query: metrics.selected_parts_rate
+    partition_by: [host]
+    series:
+    - {name: parts, value_ref: selected_parts, transform: rate, unit: count/s}
+    - {name: marks, value_ref: selected_marks, transform: rate, unit: count/s}
+    - {name: ranges, value_ref: selected_ranges, transform: rate, unit: count/s}
+    chart:
+      kind: line
+      unit: count/s
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.file_io:
+    title: ClickHouse File I/O Throughput
+    source_query: metrics.file_io
+    partition_by: [host]
+    series:
+    - {name: read, value_ref: file_read_bytes, transform: rate, unit: bytes/s}
+    - {name: write, value_ref: file_write_bytes, transform: rate, unit: bytes/s}
+    chart:
+      kind: stacked_area
+      unit: bytes/s
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.network_io:
+    title: ClickHouse Network Throughput
+    source_query: metrics.network_io
+    partition_by: [host]
+    series:
+    - {name: receive, value_ref: network_receive_bytes, transform: rate, unit: bytes/s}
+    - {name: send, value_ref: network_send_bytes, transform: rate, unit: bytes/s}
+    chart:
+      kind: stacked_area
+      unit: bytes/s
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.merge_row_rate:
+    title: ClickHouse Merge Rows Per Second
+    source_query: metrics.merge_row_rate
+    partition_by: [host]
+    series:
+    - {name: merged rows, value_ref: merged_rows, transform: rate, unit: rows/s}
+    chart:
+      kind: area
+      unit: rows/s
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.merge_byte_rate:
+    title: ClickHouse Merge Throughput
+    source_query: metrics.merge_byte_rate
+    partition_by: [host]
+    series:
+    - {name: merged data, value_ref: merged_bytes, transform: rate, unit: bytes/s}
+    chart:
+      kind: area
+      unit: bytes/s
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.cache_activity:
+    title: ClickHouse Cache Hits And Misses
+    source_query: metrics.cache_activity
+    partition_by: [host]
+    series:
+    - {name: mark hits, value_ref: mark_cache_hits, transform: rate, unit: count/s}
+    - {name: mark misses, value_ref: mark_cache_misses, transform: rate, unit: count/s}
+    - {name: uncompressed hits, value_ref: uncompressed_cache_hits, transform: rate, unit: count/s}
+    - {name: uncompressed misses, value_ref: uncompressed_cache_misses, transform: rate, unit: count/s}
+    chart:
+      kind: line
+      unit: count/s
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.replication_outcomes:
+    title: Replicated Part Outcomes
+    source_query: metrics.replication_outcomes
+    partition_by: [host]
+    series:
+    - {name: fetches, value_ref: replicated_part_fetches, transform: rate, unit: count/s}
+    - {name: fetch failures, value_ref: replicated_part_failed_fetches, transform: rate, unit: count/s}
+    - {name: merges, value_ref: replicated_part_merges, transform: rate, unit: count/s}
+    - {name: data loss, value_ref: replicated_data_loss, transform: rate, unit: count/s}
+    chart:
+      kind: line
+      unit: count/s
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.background_pool_activity:
+    title: ClickHouse Background Pool Tasks
+    source_query: metrics.background_pool_activity
+    partition_by: [host]
+    series:
+    - {name: merges and mutations, value_ref: background_merge_tasks, transform: gauge, unit: count}
+    - {name: fetches, value_ref: background_fetch_tasks, transform: gauge, unit: count}
+    - {name: moves, value_ref: background_move_tasks, transform: gauge, unit: count}
+    - {name: scheduled, value_ref: background_schedule_tasks, transform: gauge, unit: count}
+    - {name: common, value_ref: background_common_tasks, transform: gauge, unit: count}
+    chart:
+      kind: stacked_area
+      unit: count
+    collection_scope: every_snapshot
+    cost_class: medium
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.table_parts:
+    title: MergeTree Rows And Parts
+    source_query: metrics.table_parts
+    partition_by: [host]
+    series:
+    - {name: rows, value_ref: merge_tree_rows, transform: gauge, unit: count}
+    - {name: parts, value_ref: merge_tree_parts, transform: gauge, unit: count}
+    chart:
+      kind: line
+      unit: count
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.table_bytes:
+    title: MergeTree Stored Bytes
+    source_query: metrics.table_bytes
+    partition_by: [host]
+    series:
+    - {name: stored data, value_ref: merge_tree_bytes, transform: gauge, unit: bytes}
+    chart:
+      kind: area
+      unit: bytes
+    collection_scope: every_snapshot
+    cost_class: low
+    privilege_profile: clickhouse_system_read
+    result_contract:
+      kind: chart
+      unit_policy: raw_then_renderer_scaled
+      may_be_empty: true
+  clickhouse.open_files:
+    title: ClickHouse Open Files
+    source_query: metrics.open_files
+    partition_by: [host]
+    series:
+    - {name: open files, value_ref: open_files, transform: gauge, unit: count}
+    chart:
+      kind: line
+      unit: count
+    collection_scope: every_snapshot
+    cost_class: low
     privilege_profile: clickhouse_system_read
     result_contract:
       kind: chart

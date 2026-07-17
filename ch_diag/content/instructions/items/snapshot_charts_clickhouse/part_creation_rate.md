@@ -1,19 +1,21 @@
 # New Data Parts Per Second
 
-New Data Parts Per Second
+This instruction belongs to report item `snapshot_charts_clickhouse.part_creation_rate`.
 
-## Collection contract
+## What this item shows
+- New MergeTree data parts created per second from the selected LTS-compatible source.
+- It measures parts, not inserted rows.
 
-- Source: `metric:clickhouse.part_creation_rate`.
-- Timing: `every_snapshot`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- High part rate relative to inserts or creation persistently faster than merging.
 
-## Interpretation
+## Common fault causes
+- Small batches, too many partitions, materialized views, retries, replication, or mutations.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Optional logs/counters can be empty/unsupported explicitly.
+- No universal part-rate threshold exists.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare inserts, merges, and partition counts.
+- Fix batching/partition design before increasing merge concurrency.

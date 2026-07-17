@@ -9,5 +9,3 @@ printf '%s\n' __CH_DIAG_MEM__
 cat /proc/meminfo
 printf '%s\n' __CH_DIAG_NET__
 cat /proc/net/dev
-printf '%s\n' __CH_DIAG_DISK__
-cat /proc/diskstats

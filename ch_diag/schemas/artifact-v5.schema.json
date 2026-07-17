@@ -85,7 +85,7 @@
         "label": {"type": "string"},
         "source_type": {"type": "string"},
         "value_kind": {"enum": ["integer", "decimal", "timestamp", "date", "boolean", "json", "text"]},
-        "semantic_role": {"enum": ["gauge", "duration", "state", "label"]},
+        "semantic_role": {"enum": ["identifier", "gauge", "duration", "state", "label"]},
         "quantity": {"type": "string", "minLength": 1},
         "unit": {"type": "string", "minLength": 1},
         "quality": {"enum": ["exact", "estimated", "derived"]},

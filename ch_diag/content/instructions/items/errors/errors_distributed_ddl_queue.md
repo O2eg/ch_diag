@@ -1,19 +1,21 @@
 # Distributed DDL queue errors (based on system.distributed_ddl_queue)
 
-Distributed DDL queue errors (based on system.distributed_ddl_queue)
+This instruction belongs to report item `errors.errors_distributed_ddl_queue`.
 
-## Collection contract
+## What this item shows
+- Distributed DDL queue errors (based on system.distributed_ddl_queue).
+- The result preserves bounded ClickHouse error evidence for root-cause correlation.
 
-- Source: `query:legacy.errors.errors_distributed_ddl_queue`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- persistent exception or unfinished hosts
 
-## Interpretation
+## Common fault causes
+- offline host, schema drift, timeout, Keeper, or incompatible DDL; secondary errors may follow an earlier root failure
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Collection status only says whether the diagnostic query ran; returned error rows are incident evidence, not an OK result.
+- An empty result may mean no matches, while unsupported, permission-denied, and log-retention gaps are distinct diagnostics.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Group by code/message and locate the first occurrence.
+- Correlate host/time with logs, query/table/replica, and resource charts.

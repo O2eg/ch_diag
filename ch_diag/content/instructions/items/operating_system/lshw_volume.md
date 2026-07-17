@@ -1,19 +1,27 @@
 # Disk Partitions And Volumes
 
-Hardware inventory from lshw class volume.
+This instruction belongs to report item `operating_system.lshw_volume`. The item is backed by `operating_system.lshw_volume` (local host script).
 
-## Collection contract
+## What this item shows
+- Partition and volume inventory from lshw, with normalized `lsblk --json` fallback when lshw has no usable volume rows.
+- Volume layout below mounted filesystems.
+- Size and available capacity are exact bytes; filesystem use is a numeric percentage.
 
-- Source: `script:os.lshw_volume`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected partition size or layout.
+- Missing volume after storage change.
+- Database path on an unintended volume.
 
-## Interpretation
+## Common fault causes
+- Filesystem not expanded after disk resize.
+- Wrong volume mounted.
+- Partition table drift.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned without an expected partition/LVM layout.
+- `unsupported` means neither usable lshw data nor the `lsblk` fallback was available. Older util-linux versions use a reduced fallback column set.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with `Mounted Filesystems` and `Filesystem Usage`
+- Check volume size before blaming ClickHouse growth.
+- Validate storage layout after maintenance.

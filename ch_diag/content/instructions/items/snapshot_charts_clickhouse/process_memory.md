@@ -1,19 +1,22 @@
 # ClickHouse Server Process Resident Memory
 
-ClickHouse Server Process Resident Memory
+This instruction belongs to report item `snapshot_charts_clickhouse.process_memory`.
 
-## Collection contract
+## What this item shows
+- Resident set size (RSS) of the selected ClickHouse server PID.
+- RSS includes allocator arenas and resident mappings; it is not identical to ClickHouse MemoryTracking.
 
-- Source: `metric:clickhouse.process_memory`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- RSS approaching available RAM, swap/PSI pressure, or memory that keeps rising after workload subsides.
+- A widening gap between RSS and MemoryTracking.
 
-## Interpretation
+## Common fault causes
+- Concurrent joins/aggregations, caches, merges, mutations, dictionaries, mapped files, allocator fragmentation, or a leak.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No fixed RSS threshold is assigned because safe headroom depends on host and limits.
+- A PID change yields a discontinuity.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare RSS with MemAvailable, swap and ClickHouse MemoryTracking.
+- Inspect top-memory queries and concurrency before changing limits.

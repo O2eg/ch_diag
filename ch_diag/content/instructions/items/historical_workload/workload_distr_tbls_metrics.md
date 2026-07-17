@@ -1,19 +1,21 @@
 # Distributed tables metrics [by last 3 days] (based on system.metric_log)
 
-Distributed tables metrics [by last 3 days] (based on system.metric_log)
+This instruction belongs to report item `historical_workload.workload_distr_tbls_metrics`.
 
-## Collection contract
+## What this item shows
+- Distributed tables metrics [by last 3 days] (based on system.metric_log).
+- The table summarizes retained ClickHouse metric-log history over its stated lookback.
 
-- Source: `query:legacy.workload.workload_distr_tbls_metrics`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Persistent distributed-send backlog, failures, or host/table imbalance.
 
-## Interpretation
+## Common fault causes
+- Remote shard/network failure, async insert bursts, DNS/auth, or disk pressure.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Results depend on metric-log enablement, cadence, retention, and restart gaps.
+- Averages smooth peaks and maxima do not show duration; no universal severity is assigned.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare current distribution queue/errors and topology.
+- Inspect remote shards for the incident interval.

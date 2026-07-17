@@ -1,19 +1,24 @@
 # Graphics Adapters
 
-Hardware inventory from lshw class display.
+This instruction belongs to report item `operating_system.lshw_display`. The item is backed by `operating_system.lshw_display` (local host script).
 
-## Collection contract
+## What this item shows
+- Display adapter inventory visible to lshw.
+- Whether non-database GPU/display hardware is present.
 
-- Source: `script:os.lshw_display`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected GPU/display devices on a database server.
+- Inventory collection errors.
 
-## Interpretation
+## Common fault causes
+- Generic server image with unused display devices.
+- VM graphics adapter exposed by hypervisor.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned because display adapters are not inherently unsafe or harmful to ClickHouse.
+- An empty table normally means no device in this class was reported.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Treat this as inventory only.
+- Confirm no GPU/display workload is colocated with ClickHouse.
+- Ignore normal virtual display adapters unless policy forbids them.

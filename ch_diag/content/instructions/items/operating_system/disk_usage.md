@@ -1,19 +1,29 @@
 # Filesystem Usage
 
-Filesystem capacity in exact bytes and utilization percent.
+This instruction belongs to report item `operating_system.disk_usage`. The item is backed by `operating_system.disk_usage` (local host script).
 
-## Collection contract
+## What this item shows
+- Filesystem capacity, used/free bytes, and utilization percentage from `df`.
+- The artifact stores exact bytes and a raw percentage; the table applies adaptive IEC display units.
+- Which mount points are close to full at collection time.
 
-- Source: `script:os.disk_usage`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- ClickHouse data, backup, temporary, or log filesystems above safe utilization thresholds.
+- Filesystems with very little free byte capacity.
+- Unexpected ClickHouse paths on root filesystem.
 
-## Interpretation
+## Common fault causes
+- Retention/TTL gaps, detached parts, or unfinished merges and mutations.
+- Log growth.
+- Temporary file spill.
+- Many small parts or replicated data recovery increasing data size.
+- Backups left on database storage.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No fixed utilization threshold is assigned automatically because reserved blocks, growth rate, filesystem size, and operational headroom differ by environment.
+- This item uses byte capacity from `df -P -B1`; inode exhaustion must be checked separately.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Identify mount points that contain ClickHouse data, logs, temporary data, and backups.
+- Free or expand space before restarting write-heavy jobs.
+- Correlate full filesystems with table growth, detached parts, merges, mutations, and backup evidence.

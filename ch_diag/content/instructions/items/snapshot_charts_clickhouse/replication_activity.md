@@ -1,19 +1,21 @@
 # Replication Fetch And Send Activity
 
-Replication Fetch And Send Activity
+This instruction belongs to report item `snapshot_charts_clickhouse.replication_activity`.
 
-## Collection contract
+## What this item shows
+- Per-second replicated-part fetch/send activity.
+- It shows transfer work, not queue length or successful completion by itself.
 
-- Source: `metric:clickhouse.replication_activity`.
-- Timing: `every_snapshot`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Activity that does not reduce delay, prolonged zero progress with queued work, or replica asymmetry.
 
-## Interpretation
+## Common fault causes
+- Recovery/bootstrap, network/storage bottleneck, high inserts, unavailable replicas, or Keeper issues.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Reset creates gaps; zero is healthy only with empty queues.
+- Rates do not prove success.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare queue/delay and outcomes.
+- Inspect replicated_fetches, replicas, network, and disk.

@@ -1,19 +1,25 @@
 # Communication Devices
 
-Hardware inventory from lshw class communication.
+This instruction belongs to report item `operating_system.lshw_communication`. The item is backed by `operating_system.lshw_communication` (local host script).
 
-## Collection contract
+## What this item shows
+- Communication device inventory such as serial, modem, or management interfaces.
+- Non-network communication hardware visible to lshw.
 
-- Source: `script:os.lshw_communication`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected communication devices on a database host.
+- Management interfaces that violate platform policy.
 
-## Interpretation
+## Common fault causes
+- Generic hardware image.
+- Out-of-band device exposure.
+- VM virtual device defaults.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned because communication-device policy is deployment-specific.
+- Empty class output is normal; unexpected devices require comparison with the platform baseline.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Review only for inventory or security policy questions.
+- Confirm unexpected devices with platform owners.
+- Do not infer database workload behavior from this item.

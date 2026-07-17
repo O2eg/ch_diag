@@ -1,19 +1,21 @@
 # Events in cluster (based on system.events)
 
-Events in cluster (based on system.events)
+This instruction belongs to report item `clickhouse_system.system_events`.
 
-## Collection contract
+## What this item shows
+- Events in cluster (based on system.events).
+- The values come from ClickHouse system tables and describe the connected node or selected cluster scope.
 
-- Source: `query:legacy.system.system_events`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected error/retry/cache/I/O counters and large differences between nodes after accounting for uptime.
 
-## Interpretation
+## Common fault causes
+- Workload volume, restart age, retries, resource pressure, or feature-specific failure.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The table is informational and shaped by the SQL variant for the nearest preceding supported LTS.
+- Visibility follows the diagnostic user's privileges; absence caused by unsupported capability is reported separately.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Use snapshot charts for rates.
+- Normalize comparisons by uptime and focus on event families matching the incident.

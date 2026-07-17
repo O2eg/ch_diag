@@ -1,19 +1,26 @@
 # Kernel VM Parameters
 
-Kernel virtual-memory parameters from sysctl.
+This instruction belongs to report item `operating_system.sysctl_vm`. The item is backed by `operating_system.sysctl_vm` (local host script).
 
-## Collection contract
+## What this item shows
+- Kernel virtual-memory settings relevant to writeback, overcommit, dirty pages, and swappiness.
+- Runtime kernel values, not just configured files.
 
-- Source: `script:os.sysctl_vm`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Swappiness too high for database latency goals.
+- Dirty page limits that can create writeback stalls.
+- Overcommit settings inconsistent with memory planning.
 
-## Interpretation
+## Common fault causes
+- Default OS tuning left in place.
+- Sysctl change not persisted.
+- Configuration management drift.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned: safe VM values depend on RAM, storage latency, kernel release, and workload.
+- Only readable runtime `vm.*` keys are shown; this does not verify persistence in sysctl configuration files.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare VM sysctl values with platform baseline.
+- Relate dirty/writeback settings to ClickHouse write throughput, merges, mutations, and disk latency evidence.
+- Persist approved changes through system configuration management.

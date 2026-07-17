@@ -1,19 +1,21 @@
 # ClickHouse Query Rate
 
-ClickHouse Query Rate
+This instruction belongs to report item `snapshot_charts_clickhouse.query_rate`.
 
-## Collection contract
+## What this item shows
+- Per-second rates of Query, SelectQuery, InsertQuery, and FailedQuery counters from system.events.
+- Each line is a counter delta divided by real elapsed time.
 
-- Source: `metric:clickhouse.query_rate`.
-- Timing: `every_snapshot`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Failure spikes, traffic-mix changes, or throughput falling while latency/concurrency rises.
 
-## Interpretation
+## Common fault causes
+- Traffic bursts, retries, deployments, client timeout loops, or server resource saturation.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Counter reset/restart creates a gap; an idle valid interval can be zero.
+- Collection status is data quality, not workload health.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Correlate failures with Errors/query_log.
+- Compare rate with latency, activity, CPU, memory, and I/O.

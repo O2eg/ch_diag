@@ -27,7 +27,7 @@ def browser_artifact() -> dict[str, object]:
     }
     return {
         "artifact_schema_version": 5,
-        "generator": {"name": "ch_diag", "product": "ch_diag", "version": "0.9.0"},
+        "generator": {"name": "ch_diag", "product": "ch_diag", "version": "0.8.0"},
         "content": {
             "schema_version": 5,
             "document": {
@@ -232,6 +232,55 @@ def test_standalone_report_interactions_and_exports(tmp_path: Path) -> None:
     assert console_errors == []
 
 
+def test_chart_keeps_an_all_zero_series(tmp_path: Path) -> None:
+    artifact = browser_artifact()
+    artifact["items"]["browser.chart"]["result"]["series"][0]["points"] = [
+        {"t": "2026-07-16T12:00:00Z", "value": None},
+        {"t": "2026-07-16T12:00:05Z", "value": 0},
+        {"t": "2026-07-16T12:00:10Z", "value": 0},
+    ]
+    report = tmp_path / "zero-chart.html"
+    report.write_text(render_html(artifact), encoding="utf-8")
+
+    with playwright.sync_playwright() as context:
+        browser = launch_chromium_or_skip(context)
+        page = browser.new_page()
+        page.goto(report.as_uri(), wait_until="load")
+
+        item = page.locator('details.item[data-item-id="browser.chart"]')
+        chart = item.locator(".echarts-chart")
+        assert chart.get_attribute("data-chart-ready") == "true"
+        assert item.locator(".empty-state").count() == 0
+        assert page.evaluate("echartsCharts[0].series[0].data.map(point => point.y)") == [
+            0,
+            0,
+        ]
+        browser.close()
+
+
+def test_numeric_identifier_is_rendered_exactly_without_si_scaling(tmp_path: Path) -> None:
+    artifact = browser_artifact()
+    table = artifact["items"]["browser.table"]["result"]
+    table["columns"] = [
+        column_descriptor("normalized_query_hash", "UInt64", [], 0),
+        column_descriptor("executions", "UInt64", [], 0),
+    ]
+    table["rows"] = [["11636551938543030549", "108"]]
+    table["row_count"] = 1
+    report = tmp_path / "identifier.html"
+    report.write_text(render_html(artifact), encoding="utf-8")
+
+    with playwright.sync_playwright() as context:
+        browser = launch_chromium_or_skip(context)
+        page = browser.new_page()
+        page.goto(report.as_uri(), wait_until="load")
+
+        cells = page.locator('details.item[data-item-id="browser.table"] tbody td')
+        assert cells.nth(0).inner_text() == "11636551938543030549"
+        assert cells.nth(1).inner_text() == "108"
+        browser.close()
+
+
 def test_strip_meta_removes_source_controls_and_payload(tmp_path: Path) -> None:
     artifact = browser_artifact()
     strip_artifact_metadata(artifact)
@@ -247,4 +296,75 @@ def test_strip_meta_removes_source_controls_and_payload(tmp_path: Path) -> None:
         assert page.get_by_role("button", name="Show SQL").count() == 0
         assert page.get_by_role("button", name="Show Instruction").count() == 0
         assert page.get_by_role("button", name="Show meta").count() == 0
+        browser.close()
+
+
+def test_scalar_and_dynamic_unit_metadata_render_without_helper_table_noise(
+    tmp_path: Path,
+) -> None:
+    artifact = browser_artifact()
+    scalar = artifact["items"]["browser.table"]
+    scalar["item_id"] = "browser.scalar"
+    scalar["item_key"] = "scalar"
+    scalar["title"] = "Total RAM Capacity"
+    scalar["result"] = {
+        "kind": "table",
+        "columns": [column_descriptor("total_ram_bytes", "UInt64", [], 0)],
+        "rows": [[str(64 * 1024**3)]],
+        "row_count": 1,
+    }
+    value = column_descriptor("value_normalized", "UInt64", [], 0)
+    value.update(
+        {
+            "label": "Value",
+            "quantity_ref": "quantity_normalized",
+            "unit_ref": "unit_normalized",
+        }
+    )
+    memory = artifact["items"]["browser.chart"]
+    memory.update(
+        {
+            "item_id": "browser.memory",
+            "item_key": "memory",
+            "title": "Memory Information",
+            "source_kind": "script",
+            "source_id": "os.memory_info",
+            "result": {
+                "kind": "table",
+                "columns": [
+                    column_descriptor("metric", "String", [], 0),
+                    value,
+                    column_descriptor("unit_normalized", "String", [], 0),
+                    column_descriptor("quantity_normalized", "String", [], 0),
+                ],
+                "rows": [["MemTotal", str(64 * 1024**3), "bytes", "data_volume"]],
+                "row_count": 1,
+            },
+        }
+    )
+    artifact["items"] = {"browser.scalar": scalar, "browser.memory": memory}
+    artifact["sections"][0]["items"] = ["browser.scalar", "browser.memory"]
+    report = tmp_path / "scalar.html"
+    report.write_text(render_html(artifact), encoding="utf-8")
+
+    with playwright.sync_playwright() as context:
+        browser = launch_chromium_or_skip(context)
+        page = browser.new_page()
+        page.goto(report.as_uri(), wait_until="load")
+
+        scalar_item = page.locator('details.item[data-item-id="browser.scalar"]')
+        assert scalar_item.get_attribute("data-item-type") == "scalar"
+        assert scalar_item.locator('.data-type-icon[aria-label="Scalar"]').count() == 1
+        assert scalar_item.locator("table").count() == 0
+        assert scalar_item.locator(".scalar-result-value").inner_text() == "64 GiB"
+        assert scalar_item.locator(".scalar-result-value").evaluate(
+            "element => getComputedStyle(element).textAlign"
+        ) == "left"
+
+        memory_item = page.locator('details.item[data-item-id="browser.memory"]')
+        assert memory_item.locator("thead th").all_inner_texts() == ["Metric", "Value"]
+        assert memory_item.locator("tbody tr").inner_text().splitlines() == [
+            "MemTotal",
+            "64 GiB",
+        ]
         browser.close()

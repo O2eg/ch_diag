@@ -1,19 +1,21 @@
 # Detached parts and reasons
 
-Detached parts and reasons
+This instruction belongs to report item `databases_objects.db_detached_parts`.
 
-## Collection contract
+## What this item shows
+- Detached parts and reasons.
+- The result is a one-shot inventory from ClickHouse system metadata.
 
-- Source: `query:legacy.db.db_detached_parts`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- old/large/unexpected detached parts or corruption reasons
 
-## Interpretation
+## Common fault causes
+- manual detach, failed recovery/attach, or disk problem; privilege/topology scope can also make inventory incomplete
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Rows are inventory/advisory evidence; successful SQL execution does not assert schema or storage health.
+- Cluster comparisons cover only reachable hosts in the selected cluster definition and visible objects.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Validate against intended schema/topology.
+- Correlate DDL, errors, replication, and storage before ALTER/ATTACH/DROP.

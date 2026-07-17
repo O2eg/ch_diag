@@ -1,19 +1,21 @@
 # Top long queries
 
-Top long queries
+This instruction belongs to report item `query_workload.queries_top_long`.
 
-## Collection contract
+## What this item shows
+- Top long queries.
+- The table ranks finished query_log workload for DBA triage.
 
-- Source: `query:legacy.queries.queries_top_long`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- High elapsed time, large reads/memory, and repeated recent query IDs.
 
-## Interpretation
+## Common fault causes
+- Poor pruning, joins/sorts, remote waits, contention, or resource overload.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The ranking is bounded by query_log retention, sampling/settings, privileges, and the query LIMIT.
+- normalized_query_hash values are opaque exact UInt64 identifiers for correlation and must not be scaled or treated arithmetically.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Inspect query_id/settings/plan securely.
+- Compare normalized aggregate ranking and resource charts.

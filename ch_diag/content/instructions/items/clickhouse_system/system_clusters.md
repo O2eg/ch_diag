@@ -1,19 +1,21 @@
 # List of clusters
 
-Contains full output of system.clusters
+This instruction belongs to report item `clickhouse_system.system_clusters`.
 
-## Collection contract
+## What this item shows
+- Contains full output of system.clusters.
+- The values come from ClickHouse system tables and describe the connected node or selected cluster scope.
 
-- Source: `query:legacy.system.system_clusters`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Replica error fields, unexpected addresses/ports, shard imbalance, or different topology across nodes.
 
-## Interpretation
+## Common fault causes
+- DNS/network problems, stale cluster configuration, or incomplete rollout.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The table is informational and shaped by the SQL variant for the nearest preceding supported LTS.
+- Visibility follows the diagnostic user's privileges; absence caused by unsupported capability is reported separately.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with replication/distributed-queue errors.
+- Validate the definition on every node.

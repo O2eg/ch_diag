@@ -1,19 +1,21 @@
 # Changed Settings
 
-Settings which differ from their profile defaults.
+This instruction belongs to report item `overview.changed_settings`.
 
-## Collection contract
+## What this item shows
+- Settings which differ from their profile defaults.
+- This is connection and configuration context for interpreting the rest of the report.
 
-- Source: `query:configuration.changed_settings`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Changes to memory, concurrency, timeouts, distributed behavior, inserts, joins, or readonly/security controls.
 
-## Interpretation
+## Common fault causes
+- Profile/user/session overrides, rollout drift, or emergency tuning left in place.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Rows are informational; successful collection proves the connected endpoint answered, not that its configuration is correct.
+- Unexpected identity/configuration must be checked against the operator's intended target and baseline.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare each setting with the approved baseline and incident timeline.
+- Confirm server/profile/user/session scope before reverting.

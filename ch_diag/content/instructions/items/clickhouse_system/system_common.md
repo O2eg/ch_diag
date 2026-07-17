@@ -1,19 +1,21 @@
 # Common cluster information
 
-Common cluster information
+This instruction belongs to report item `clickhouse_system.system_common`.
 
-## Collection contract
+## What this item shows
+- Common cluster information.
+- The values come from ClickHouse system tables and describe the connected node or selected cluster scope.
 
-- Source: `query:legacy.system.system_common`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Node-to-node differences, unexpected build/uptime/restart, or identity inconsistent with inventory.
 
-## Interpretation
+## Common fault causes
+- Partial rollout, replacement node, wrong endpoint, or configuration drift.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The table is informational and shaped by the SQL variant for the nearest preceding supported LTS.
+- Visibility follows the diagnostic user's privileges; absence caused by unsupported capability is reported separately.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare equivalent nodes and deployment records.
+- Use restart time to explain counter discontinuities.

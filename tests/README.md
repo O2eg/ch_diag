@@ -8,7 +8,7 @@ Python versions, real ClickHouse SQL and a two-replica Keeper cluster.
 
 - `unit/` — no Docker or network: artifact, content/planner, version selection,
   adapter concurrency, samplers, shell syntax, secure output, configuration,
-  legacy wrapper and fixture contracts.
+  and fixture contracts.
 - `browser/` — self-contained HTML behavior in headless Chromium.
 - `integration/test_live_clickhouse.py` — every applicable SQL source, TLS,
   privileges, SSH host scripts and one-shot/snapshots lifecycle in all three
@@ -19,8 +19,11 @@ Python versions, real ClickHouse SQL and a two-replica Keeper cluster.
   reports against two replicas and ClickHouse Keeper.
 - `integration/multinode/` — custom reusable ClickHouse image, matching Keeper,
   topology configuration and deterministic multi-engine fixture data.
-- `tools/run_legacy_clickhouse_matrix.py` — pinned ClickHouse `20.3–22.2`
-  boundary images on native amd64 runners.
+- `tools/run_lts_clickhouse_matrix.py` — pinned ClickHouse LTS images from
+  `20.3` through `26.3` on native amd64 runners.
+- `tools/report_review/` — reusable 12-case HTML review matrix over the real
+  multi-node fixture, including SSH setup, a disposable active workload,
+  no-empty-chart enforcement, summaries and headless validation.
 
 ## Default checks
 
@@ -45,7 +48,7 @@ cleanly. Run a narrow module or test while developing:
 
 ```bash
 pytest -q tests/unit/test_samplers.py
-pytest -q tests/unit/test_content_and_planner.py::test_vendor_content_loads_and_covers_legacy_inventory
+pytest -q tests/unit/test_content_and_planner.py::test_vendor_content_loads_and_covers_diagnostic_inventory
 ```
 
 The main unit groups are:
@@ -54,18 +57,18 @@ The main unit groups are:
   autonomous HTML payload.
 - `test_clickhouse_adapter.py` — bounded worker concurrency, cleanup and
   timeout behavior.
-- `test_config_and_legacy_cli.py` — TOML/env/CLI precedence and old-command
-  translation.
+- `test_config.py` — TOML/environment/CLI precedence and rejected secret keys.
 - `test_content_and_planner.py` — manifests, integrity, upstream OS lock,
   filters and version/scope planning.
-- `test_legacy_matrix.py` — pinned images, architecture selection, reusable
-  legacy runner behavior and current SQL normalizer contracts.
+- `test_lts_matrix.py` — pinned LTS images, architecture selection, reusable
+  runner behavior and current SQL normalizer contracts.
 - `test_multinode_fixture.py` — custom compose topology and fixture contracts.
-- `test_samplers.py` — legacy/current `iostat`, procfs, process metrics and
-  chart budgets.
+- `test_samplers.py` — older/current `iostat`, procfs, process metrics,
+  independent monotonic source scheduling, bounded SQL concurrency, slow/error
+  isolation and chart budgets.
 - `test_secure_output.py` — mode-`0600` atomic output and symlink replacement.
 - `test_shell_sources.py` — POSIX syntax for every packaged shell source.
-- `test_versioning.py` — numeric parsing and half-open variant ranges.
+- `test_versioning.py` — numeric parsing and nearest-preceding-LTS selection.
 
 ## Minimum Python and clean wheel
 
@@ -130,22 +133,24 @@ manifest-declared `unsupported`; syntax/runtime SQL errors fail the test. It
 also executes every declared host script over SSH and builds minimal one-shot
 and three-sample snapshots reports in `local`, `remote-db-only` and `remote`.
 
-## Legacy ClickHouse matrix
+## ClickHouse LTS matrix
 
-On a native amd64 host, run every pinned compatibility boundary:
+On a native amd64 host, run every pinned LTS branch:
 
 ```bash
-python tools/run_legacy_clickhouse_matrix.py
+python tools/run_lts_clickhouse_matrix.py
 ```
 
-Use `--boundary 20.3` repeatedly to select versions and `--remove` for an
+Use `--branch 20.3` repeatedly to select versions and `--remove` for an
 ephemeral CI run. Containers are named deterministically and retained/reused by
 default. On ARM64 the runner exits successfully with an explicit skip before
-pulling images because the pinned legacy manifests are `linux/amd64` only.
+pulling images because the oldest pinned manifests are `linux/amd64` only.
 
-Each boundary executes every applicable node SQL source and a packaged
+Each LTS branch executes every applicable node SQL source, including metric
+input queries, and a packaged
 one-shot lifecycle smoke. It verifies execution/syntax compatibility rather
-than exact result values.
+than exact result values. Non-LTS releases are not additional test targets;
+runtime selection maps them to the nearest preceding LTS contract.
 
 ## Multi-node ClickHouse and Keeper
 
@@ -160,11 +165,27 @@ ports, topology, reusable volumes and variants. The suite verifies both native
 endpoints, Keeper metadata, replicated/distributed/local engines, every
 applicable node and cluster SQL source, and cluster one-shot plus snapshots.
 
+## Human-review report matrix
+
+Generate all `local`/SSH `remote`/`remote-db-only`, node/cluster and
+one-shot/snapshots HTML reports from the same multi-node fixture:
+
+```bash
+.venv/bin/python -m tools.report_review
+```
+
+The harness writes a clickable matrix index and JSON summary below
+`reports/review-matrix/<run-id>/`. By default it recreates `chdiag_review`,
+seeds replicated/Distributed data and keeps workload active during snapshots;
+the external example disables all mutation. Managed/external workflows,
+configuration, failure semantics and local-vs-remote host scope are documented
+in [`tools/report_review/README.md`](../tools/report_review/README.md).
+
 ## Adding or correcting tests
 
 - Change content contract tests with any intentional YAML/source rule change.
-- Add version variants and a real boundary execution when ClickHouse releases
-  differ in system-table columns or semantics.
+- Add LTS variants and a real LTS execution when ClickHouse releases differ in
+  system-table columns or semantics.
 - Add sampler parser fixtures for every supported old/new host-tool output.
 - Add browser assertions for user-visible renderer controls or export changes.
 - Keep unit tests offline, deterministic and independent of generated reports.

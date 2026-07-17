@@ -1,19 +1,20 @@
 # Active Parts By Partition
 
-Raw part counts with an explicit advisory threshold flag.
+This instruction belongs to report item `dba_troubleshooting.partition_part_counts`.
 
-## Collection contract
+## What this item shows
+- Active part counts/sizes per partition with an explicit advisory high-count flag.
 
-- Source: `query:troubleshooting.partition_part_counts`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Flagged/rising partitions or many small parts relative to rows/bytes.
 
-## Interpretation
+## Common fault causes
+- Unbatched inserts, excessive partition cardinality, stalled merges, mutation/replication backlog.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The threshold is a triage hint, not a ClickHouse limit or incident verdict.
+- Counts are point-in-time.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Check batching and PARTITION BY.
+- Compare with part creation/merge rates before tuning pools.

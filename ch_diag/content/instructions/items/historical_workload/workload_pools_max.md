@@ -1,19 +1,21 @@
 # Pools utilization [max by last week] (based on system.metric_log)
 
-Pools utilization [max by last week] (based on system.metric_log)
+This instruction belongs to report item `historical_workload.workload_pools_max`.
 
-## Collection contract
+## What this item shows
+- Pools utilization [max by last week] (based on system.metric_log).
+- The table summarizes retained ClickHouse metric-log history over its stated lookback.
 
-- Source: `query:legacy.workload.workload_pools_max`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Pools repeatedly reaching capacity even when averages are modest.
 
-## Interpretation
+## Common fault causes
+- Bursty ingestion/recovery/mutations/distributed sends or pool mismatch.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Results depend on metric-log enablement, cadence, retention, and restart gaps.
+- Averages smooth peaks and maxima do not show duration; no universal severity is assigned.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare maximum with average and actual backlog.
+- Do not resize from one isolated maximum.

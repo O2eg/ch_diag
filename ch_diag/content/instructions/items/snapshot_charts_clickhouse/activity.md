@@ -1,19 +1,21 @@
 # ClickHouse Current Activity
 
-ClickHouse Current Activity
+This instruction belongs to report item `snapshot_charts_clickhouse.activity`.
 
-## Collection contract
+## What this item shows
+- Point-in-time gauges for active queries, merges, mutations, and distributed sends.
+- These are concurrency/backlog samples, not completion rates.
 
-- Source: `metric:clickhouse.activity`.
-- Timing: `every_snapshot`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Persistent concurrency, work that never drains, or distributed sends accumulating.
 
-## Interpretation
+## Common fault causes
+- Slow queries, queueing, merge/mutation debt, unavailable shards, or network/storage failure.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Sampling can miss short tasks.
+- Nonzero activity is not automatically unhealthy.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Open Current Processes/Merges/Mutations for rows.
+- Compare with latency, resources, queues, and errors.

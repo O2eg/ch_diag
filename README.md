@@ -6,23 +6,17 @@ strict JSON artifact and/or a self-contained HTML report with Apache ECharts.
 The installed package contains its SQL, shell scripts, renderer and JavaScript
 assets and does not require `pg_diag`, a CDN or Internet access at runtime.
 
-Version `0.9.0` is the final milestone of the schema-v5 roadmap. The legacy
-`ch_diag.py` remains only as a compatibility wrapper and is not used by the
-new collection engine.
-
 ## Documentation
 
 - [Content pack](https://github.com/O2eg/ch_diag/blob/main/ch_diag/content/README.md) —
   report layout, query/script/metric manifests, version variants, instructions
   and integrity boundary.
 - [Tests](https://github.com/O2eg/ch_diag/blob/main/tests/README.md) — unit,
-  browser, live ClickHouse, legacy-version and multi-node test commands.
+  browser, live ClickHouse, LTS-version and multi-node test commands.
 - [Security model](https://github.com/O2eg/ch_diag/blob/main/docs/security.md) —
   read-only execution, credentials, redaction and report handling.
 - [Compatibility matrix](https://github.com/O2eg/ch_diag/blob/main/docs/compatibility.md) —
   supported Python, ClickHouse and host-tool versions.
-- [Legacy migration map](https://github.com/O2eg/ch_diag/blob/main/docs/legacy_item_migration.md) —
-  mapping from the `0.5.0` report items to schema v5.
 - [Troubleshooting query gap map](https://github.com/O2eg/ch_diag/blob/main/docs/troubleshooting_query_gap.md) —
   coverage of the ClickHouse troubleshooting knowledge base.
 
@@ -35,7 +29,7 @@ Quick navigation: [install](#install), [runtime requirements](#runtime-requireme
 
 ## Features
 
-- ClickHouse-version-aware SQL variants starting with ClickHouse `20.3`.
+- LTS-anchored ClickHouse SQL variants starting with ClickHouse `20.3`.
 - Node and real cluster collection through the native ClickHouse protocol.
 - Point-in-time `one-shot` and repeated `snapshots` reports.
 - Database-only, local-host and key-authenticated SSH collection modes.
@@ -84,8 +78,9 @@ Collector runtime:
 
 ClickHouse target:
 
-- ClickHouse `20.3` or newer. Version-specific SQL is selected from the server
-  version; see the compatibility matrix for tested and best-effort tiers.
+- ClickHouse `20.3` or newer. SQL contracts are tested on explicit LTS branches;
+  an intermediate server release uses the nearest preceding LTS contract (for
+  example, `22.9` uses `22.8`).
 - A dedicated account with `SELECT` on the required `system.*` tables. The
   driver requests `readonly=2` for every diagnostic connection.
 - Cluster scope additionally requires the same usable account on every replica
@@ -99,8 +94,14 @@ from `procps` (`ps`, `sysctl`), `util-linux` (`lscpu`, `lsblk`), `iproute2`
 `readlink`, `sed`, `stat` and `uname`. Install `lshw` for the hardware sections;
 the probes use passwordless `sudo -n` only when it is already available and
 otherwise run `lshw` as the diagnostics user. `sysstat` supplies the packaged
-`iostat` compatibility probe, while current report disk charts are derived
-from `/proc/diskstats`.
+`iostat` process used for disk throughput, IOPS, utilization and latency charts.
+Disk sampling runs independently from the procfs CPU, memory and network probe,
+so an unavailable `iostat` affects only the disk chart items.
+The ClickHouse process probe also reads `/proc/PID/task`: per-TID CPU is
+available with normal procfs access, while per-TID I/O can require the
+diagnostics account to match the ClickHouse service user or have equivalent
+ptrace permission. Linux RSS is intentionally not reported per thread because
+ClickHouse threads share one process address space.
 
 Missing host commands affect only the corresponding attempted item. Use
 `remote-db-only` when host evidence is not required: no host script or sampler
@@ -239,22 +240,44 @@ percentage progress.
 |---|---|---|
 | Visible `query` | once | once before the sampling window |
 | Visible host `script` | once in `local`/`remote` | once before the window in `local`/`remote` |
-| ClickHouse metric source query | omitted | at every scheduled point |
-| Linux/ClickHouse-process sampler | omitted | at every scheduled point in `local`/`remote` |
+| ClickHouse `every_snapshot` metric source query | omitted | at every scheduled point |
+| ClickHouse `window_end` metric source query | omitted | eligible once at the exact window-end deadline |
+| Procfs CPU/memory/network and ClickHouse process/thread sampler | omitted | at every scheduled point in `local`/`remote` |
+| `iostat` disk sampler | omitted | one independent window-length process in `local`/`remote` |
 | Visible `metric` | omitted without execution | evaluated after sampling from its declared source |
 
-The bundled pack currently uses `once` and `every_snapshot`; it has no
-`window_endpoints` sources. Counter rates are calculated from adjacent samples,
-using actual elapsed time. A reset, missing key or invalid value becomes a gap
-or diagnostic rather than a negative or fabricated zero.
+The bundled pack uses `once`, `every_snapshot` and `window_end`. Procfs,
+ClickHouse process/thread and each SQL source have independent loops driven by
+the same absolute monotonic deadlines. SQL concurrency is bounded by
+`runtime_policy.database_workers`. A slow or failed source therefore cannot
+shift another source's samples. The same source is never overlapped with
+itself: if it is still running at its next deadline, only that observation is
+skipped and a `sample_skipped_source_busy` diagnostic is recorded. Every
+successful observation carries its actual completion timestamp and counter
+rates use the actual elapsed time between successful samples.
+
+A counter reset, missing key or invalid value becomes a gap or diagnostic
+rather than a negative or fabricated zero. The optional window-end
+`system.query_thread_log` source correlates completed query threads with Linux
+TIDs; it depends on `log_query_threads` and asynchronous log flushing, so
+live/background evidence continues to come from procfs and ClickHouse thread
+names.
 
 `snapshots` defaults to `--duration 10 --interval 5`, scheduling offsets at
 0, 5 and 10 seconds. The exact end of the window is always included; for
 example `--duration 2 --interval 0.7` schedules 0, 0.7, 1.4 and 2 seconds. The
 minimum interval is 0.2 seconds, duration must be at least the interval, and the
-content policy limits a report to 360 scheduled samples. Point-in-time work
-and rendering can make wall-clock runtime longer than `--duration`. If a
-targeted snapshots plan contains only once-items, no timed window is opened.
+content policy limits a report to 360 scheduled samples. Snapshot markers keep
+both the requested offset and actual monotonic offset. A source waiting for SQL
+capacity or completing its final observation can make wall-clock runtime longer
+than `--duration`. If a targeted snapshots plan contains only once-items, no
+timed window is opened.
+
+The independent `iostat` stream uses whole-second intervals and discards its
+first cumulative-since-boot report. For sub-second snapshot settings it still
+needs one real second, so a disk-targeted run can outlive the requested window;
+other samplers keep their exact scheduled offsets and remain independent of an
+`iostat` failure.
 
 ## First reports
 
@@ -483,8 +506,8 @@ The packaged formal contract is the
 
 ## Report contents
 
-The bundled report currently contains 121 visible items: 66 ClickHouse query
-items, 31 Linux shell items and 24 derived snapshot metrics.
+The bundled report currently contains 139 visible items: 66 ClickHouse query
+items, 31 Linux shell items and 42 derived snapshot metrics.
 
 | Section | Items | Evidence |
 |---|---:|---|
@@ -500,7 +523,7 @@ items, 31 Linux shell items and 24 derived snapshot metrics.
 | Query Workload | 8 | bounded long, memory, result-size and profile-event views |
 | DBA Troubleshooting | 8 | storage/compression, partitions, merges, replication and frequent/top queries |
 | Snapshot Charts OS | 12 | CPU, RAM, disk and network rates |
-| Snapshot Charts ClickHouse | 12 | query/row/byte rates, gauges, process activity, parts, Keeper and replication |
+| Snapshot ClickHouse | 30 | query rate/latency, selected parts, file/network I/O, merges, caches, connections, background pools, MergeTree footprint, process/thread activity, Keeper and replication |
 
 Availability depends on ClickHouse version, target scope, configured system
 logs, grants, collection mode and host permissions. Cluster-only comparison
@@ -524,8 +547,8 @@ ch_diag/content/
 ```
 
 Each visible item references exactly one query, script or metric source.
-ClickHouse version intervals are half-open and target scope is explicit; the
-runtime does not rewrite a cluster query into a node query. SQL cursor metadata
+Every SQL variant names its supported LTS branches and target scope explicitly;
+the runtime does not rewrite a cluster query into a node query. SQL cursor metadata
 defines table columns, while result contracts, units, limits and presentation
 hints remain declarative. The effective content document and source provenance
 are stored once in a normal artifact and are removed by `--strip-meta`.
@@ -555,16 +578,19 @@ the [security model](https://github.com/O2eg/ch_diag/blob/main/docs/security.md)
 ## Compatibility
 
 Python 3.10+ is the supported runtime; the built wheel is installed and
-validated in a clean Python 3.10 container. The current local integration
-baseline is ClickHouse 25.8.28.1 on ARM64: node and real two-replica Keeper
-cluster, verified TLS, minimal/extended/denied privileges, and one-shot plus
-snapshots in `local`, `remote-db-only` and SSH `remote` modes. Legacy SQL
-variants from ClickHouse 20.3 through 22.2 are retained and selected by
-half-open version ranges; their pinned `linux/amd64` jobs cannot execute on the
-current ARM64 host and remain a required CI result.
+validated in a clean Python 3.10 container. SQL compatibility is tested only on
+the pinned LTS branches `20.3`, `20.8`, `21.3`, `21.8`, `22.3`, `22.8`, `23.3`,
+`23.8`, `24.3`, `24.8`, `25.3`, `25.8` and `26.3`. A non-LTS server uses the
+nearest preceding LTS SQL contract; both the actual server version and selected
+LTS branch are recorded in the artifact. Versions below `20.3` are rejected.
 
-See the [compatibility matrix](https://github.com/O2eg/ch_diag/blob/main/docs/compatibility.md),
-[legacy migration map](https://github.com/O2eg/ch_diag/blob/main/docs/legacy_item_migration.md)
+The full local integration baseline remains ClickHouse 25.8.28.1 on ARM64:
+node and real two-replica Keeper cluster, verified TLS,
+minimal/extended/denied privileges, and one-shot plus snapshots in `local`,
+`remote-db-only` and SSH `remote` modes. The complete historical LTS matrix uses
+pinned `linux/amd64` images in CI.
+
+See the [compatibility matrix](https://github.com/O2eg/ch_diag/blob/main/docs/compatibility.md)
 and [troubleshooting gap map](https://github.com/O2eg/ch_diag/blob/main/docs/troubleshooting_query_gap.md).
 
 ## Tests and package verification
@@ -599,17 +625,13 @@ starts two real replicas with a dedicated ClickHouse Keeper, seeds replicated,
 Distributed and local-engine tables, and executes the complete node/cluster SQL
 suite plus cluster one-shot and snapshots.
 
+For visual review, the [report review harness](tools/report_review/README.md)
+reuses that fixture to build a 12-case HTML/JSON matrix across all collection
+modes, node/cluster scopes and one-shot/snapshots lifecycles, then writes a
+clickable index and validates every HTML file in headless Chrome/Chromium.
+
 The complete test map, minimum-Python container command and clean-wheel smoke
 are in the [tests README](https://github.com/O2eg/ch_diag/blob/main/tests/README.md).
-
-## Legacy command transition
-
-`python ch_diag.py ...` and the installed `ch-diag-legacy` entry point are thin
-compatibility wrappers around the new engine. They translate the old flat,
-cluster-oriented invocation to `ch-diag one-shot`, emit a deprecation warning
-and produce autonomous HTML. They do not execute the old threaded collector.
-New automation should call `ch-diag` directly because snapshots, SSH, JSON,
-filters and schema-v5 controls are available only through the modern CLI.
 
 ## License
 

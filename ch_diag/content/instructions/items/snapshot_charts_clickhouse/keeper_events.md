@@ -1,19 +1,21 @@
 # Keeper And ZooKeeper Event Rate
 
-Keeper And ZooKeeper Event Rate
+This instruction belongs to report item `snapshot_charts_clickhouse.keeper_events`.
 
-## Collection contract
+## What this item shows
+- Per-second rate of ProfileEvents whose names describe Keeper/ZooKeeper operations.
+- It is coordination activity, not latency or error rate.
 
-- Source: `metric:clickhouse.keeper_events`.
-- Timing: `every_snapshot`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Bursts with replication/DDL stalls or sustained activity after workload subsides.
 
-## Interpretation
+## Common fault causes
+- Replication churn, distributed DDL, reconnects, network instability, or overloaded Keeper.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Absent LTS event names stay absent; high activity alone is not bad.
+- Errors require dedicated error evidence.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare replication queues/outcomes and Keeper errors.
+- Inspect Keeper logs/session/network latency when activity coincides with stalls.

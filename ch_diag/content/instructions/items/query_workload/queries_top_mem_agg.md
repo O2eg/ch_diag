@@ -1,19 +1,21 @@
 # Top queries by memory usage aggregated by normalized_query_hash
 
-Top queries by memory usage aggregated by normalized_query_hash
+This instruction belongs to report item `query_workload.queries_top_mem_agg`.
 
-## Collection contract
+## What this item shows
+- Top queries by memory usage aggregated by normalized_query_hash.
+- The table ranks finished query_log workload for DBA triage.
 
-- Source: `query:legacy.queries.queries_top_mem_agg`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Fingerprints with high peak/average memory and enough calls for concurrency risk.
 
-## Interpretation
+## Common fault causes
+- Memory-heavy shape, data skew, excessive parallelism, or retry duplication.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The ranking is bounded by query_log retention, sampling/settings, privileges, and the query LIMIT.
+- normalized_query_hash values are opaque exact UInt64 identifiers for correlation and must not be scaled or treated arithmetically.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Resolve fingerprint and inspect concurrent copies.
+- Compare aggregate contribution with server/OS memory.

@@ -1,19 +1,21 @@
 # ClickHouse Process Limits And Security Context
 
-Command, executable, resource limits and kernel security state for the selected ClickHouse server.
+This instruction belongs to report item `clickhouse_host.process_context`.
 
-## Collection contract
+## What this item shows
+- Command, executable, resource limits and kernel security state for the selected ClickHouse server.
+- The process is selected from the database endpoint rather than from an arbitrary ClickHouse PID.
 
-- Source: `script:clickhouse.process_context`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Low nofile/nproc limits, unexpected arguments, deleted executable, or weak/unexpected security confinement.
 
-## Interpretation
+## Common fault causes
+- Service-unit drift, manual startup, incomplete hardening, or incorrect limits.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- This is a point-in-time host observation for the ClickHouse process selected from the connected native port.
+- Container, service-manager, ACL, and custom-path context can require additional checks.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare limits with open files/connections and deployment policy.
+- Verify systemd/container configuration and executable ownership.

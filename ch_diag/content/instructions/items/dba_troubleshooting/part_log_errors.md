@@ -1,19 +1,20 @@
 # Recent Part Log Errors
 
-Bounded errors from optional system.part_log.
+This instruction belongs to report item `dba_troubleshooting.part_log_errors`.
 
-## Collection contract
+## What this item shows
+- Recent bounded error records from optional system.part_log with part operation and exception context.
 
-- Source: `query:troubleshooting.part_log_errors`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Repeated failures for one table/partition or merge/download errors aligned with an incident.
 
-## Interpretation
+## Common fault causes
+- Disk full/I/O, corrupt parts, permissions, failed fetch, or invalid mutation.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Empty is normal with no errors, while disabled/unavailable part_log is reported separately.
+- Returned errors are never downgraded by successful collection.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Correlate time with server logs, replication outcomes, and disk metrics.
+- Preserve evidence before detach/delete/forced recovery.

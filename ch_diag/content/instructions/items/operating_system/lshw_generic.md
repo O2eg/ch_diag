@@ -1,19 +1,26 @@
 # Generic Devices
 
-Hardware inventory from lshw class generic.
+This instruction belongs to report item `operating_system.lshw_generic`. The item is backed by `operating_system.lshw_generic` (local host script).
 
-## Collection contract
+## What this item shows
+- Miscellaneous hardware devices not classified elsewhere by lshw.
+- Catch-all inventory for unusual devices.
 
-- Source: `script:os.lshw_generic`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected unknown devices.
+- Devices with missing drivers.
+- New generic entries after hardware changes.
 
-## Interpretation
+## Common fault causes
+- Driver mismatch.
+- Firmware change.
+- VM hardware profile change.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned; generic devices require platform-specific identification.
+- Empty output is valid and unknown devices are not automatically security or performance findings.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Review only entries related to database storage, network, or security policy.
+- Compare before/after hardware maintenance.
+- Escalate unknown production devices when policy requires.

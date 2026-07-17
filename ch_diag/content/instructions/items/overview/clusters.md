@@ -1,19 +1,21 @@
 # Configured Clusters
 
-Cluster, shard and replica topology known to the connected node.
+This instruction belongs to report item `overview.clusters`.
 
-## Collection contract
+## What this item shows
+- Cluster, shard and replica topology known to the connected node.
+- This is connection and configuration context for interpreting the rest of the report.
 
-- Source: `query:overview.clusters`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Missing/duplicate replicas, unexpected hosts/ports, shard imbalance, or transport values inconsistent with policy.
 
-## Interpretation
+## Common fault causes
+- Configuration drift, DNS changes, partial rollout, or the wrong cluster definition on this node.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Rows are informational; successful collection proves the connected endpoint answered, not that its configuration is correct.
+- Unexpected identity/configuration must be checked against the operator's intended target and baseline.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare topology with the intended cluster and other nodes.
+- Validate DNS/network and replica health for every discrepancy.

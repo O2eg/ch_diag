@@ -1,19 +1,20 @@
 # Merges In Progress With ETA
 
-Current merges with division-safe estimated remaining time.
+This instruction belongs to report item `dba_troubleshooting.merges_eta`.
 
-## Collection contract
+## What this item shows
+- Current merges with progress and division-safe estimated remaining time.
 
-- Source: `query:troubleshooting.merges_eta`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Very long ETA, no progress across captures, excess concurrency, or merges consuming capacity.
 
-## Interpretation
+## Common fault causes
+- Slow storage, oversized parts, mutations/TTL, resource contention, or unstable early estimates.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- ETA is omitted when progress/rate is insufficient and never divides by zero.
+- It is an estimate, not a deadline.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare successive progress.
+- Correlate merge throughput, disk latency/utilization, and background pools before cancellation.

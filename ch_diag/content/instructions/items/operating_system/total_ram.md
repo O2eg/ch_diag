@@ -1,19 +1,26 @@
 # Total RAM Capacity
 
-Exact total host RAM bytes from procfs.
+This instruction belongs to report item `operating_system.total_ram`. The item is backed by `operating_system.total_ram` (local host script).
 
-## Collection contract
+## What this item shows
+- Host total RAM capacity from `/proc/meminfo`, stored as exact bytes and displayed with an adaptive IEC unit.
+- Sizing evidence for ClickHouse query memory limits, caches, background work, and connection concurrency.
 
-- Source: `script:os.total_ram`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- RAM smaller than expected for the instance class or hardware.
+- Capacity mismatch across cluster nodes.
+- Configured memory budgets that exceed physical RAM.
 
-## Interpretation
+## Common fault causes
+- Wrong VM flavor or container limit.
+- Hardware replacement or BIOS memory issue.
+- Configuration copied from a larger host.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned because adequate capacity depends on workload and ClickHouse configuration.
+- `/proc/meminfo` may describe the host rather than a container cgroup limit; validate container quotas separately.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Confirm instance size or physical RAM inventory.
+- Recalculate worst-case memory with query concurrency, `max_memory_usage`, caches, merges, and container limits.
+- Compare with `Memory Information` for current availability.

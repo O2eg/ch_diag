@@ -1,19 +1,21 @@
 # Current merges (based on system.merges)
 
-Current merges (based on system.merges)
+This instruction belongs to report item `activity.proc_current_merges`.
 
-## Collection contract
+## What this item shows
+- Current merges (based on system.merges).
+- The table shows currently active or queued work, not a historical rate.
 
-- Source: `query:legacy.processes.proc_current_merges`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Slow/no-progress merges, high concurrency, or large merges aligned with disk/query pressure.
 
-## Interpretation
+## Common fault causes
+- Ingestion backlog, TTL/mutations, slow storage, or oversized parts.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- This point-in-time table can miss work that starts and finishes outside collection.
+- A nonempty result is not automatically unhealthy; elapsed time, progress, backlog, and errors determine significance.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare progress across captures and merge-rate charts.
+- Check disk latency/utilization and partition parts.

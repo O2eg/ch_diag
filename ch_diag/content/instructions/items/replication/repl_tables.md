@@ -1,19 +1,21 @@
 # Status of replicated tables (based on system.replicas)
 
-Status of replicated tables (based on system.replicas)
+This instruction belongs to report item `replication.repl_tables`.
 
-## Collection contract
+## What this item shows
+- Status of replicated tables (based on system.replicas).
+- The table exposes ReplicatedMergeTree state coordinated through Keeper or ZooKeeper.
 
-- Source: `query:legacy.replication.repl_tables`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Read-only/session-expired replicas, growing delay/queue, lost parts, or inactive replicas.
 
-## Interpretation
+## Common fault causes
+- Keeper outage, disk/network failure, unavailable replicas, or a stuck queue task.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The item is point-in-time evidence; a short transient queue/fetch can be normal, while persistence across captures is significant.
+- Local scope describes this node's view and must not be presented as cluster-wide certainty.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Start with the worst table and last exception.
+- Cross-check queue/fetches, Keeper, and storage.

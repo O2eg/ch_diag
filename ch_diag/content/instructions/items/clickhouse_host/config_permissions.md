@@ -1,12 +1,21 @@
 # ClickHouse Configuration And Data Path Permissions
 
-This item records ownership and permissions for the configuration selected by
-the connected ClickHouse server process and for conventional data/log paths.
+This instruction belongs to report item `clickhouse_host.config_permissions`.
 
-The process is mapped from the native port used by `ch_diag`; the collector
-does not select an arbitrary ClickHouse instance when several servers run on
-the same host. A `world-writable` advisory should be reviewed against the
-host's deployment and access model.
+## What this item shows
+- Ownership and modes for the connected server configuration and conventional data/log paths, with world-writable paths marked explicitly.
+- The process is selected from the database endpoint rather than from an arbitrary ClickHouse PID.
 
-The check is read-only. Missing conventional paths are omitted because custom
-storage and logging locations may be configured elsewhere.
+## What to watch
+- World-writable paths, unexpected owners/groups, or configuration secrets readable beyond the service account.
+
+## Common fault causes
+- Manual chmod/chown, deployment mistakes, shared mounts, or inherited ACLs.
+
+## Automatic evaluation
+- This is a point-in-time host observation for the ClickHouse process selected from the connected native port.
+- Container, service-manager, ACL, and custom-path context can require additional checks.
+
+## Checklist
+- Resolve active include/data/log paths.
+- Correct permissions through configuration management and rotate exposed secrets.

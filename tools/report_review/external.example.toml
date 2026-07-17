@@ -1,0 +1,64 @@
+# Copy this file and adapt endpoint/key paths when the integration cluster is
+# already managed outside this harness. The fixture is never started, seeded or
+# stopped when manage=false.
+[fixture]
+manage = false
+build = false
+seed = false
+cleanup = false
+compose_file = "tests/integration/multinode/compose.yaml"
+compose_overlay = "tools/report_review/compose.review.yaml"
+project_name = "chdiag-multinode"
+keeper_container = "chdiag-multinode-keeper"
+node1_container = "chdiag-multinode-node1"
+node2_container = "chdiag-multinode-node2"
+keeper_port = 19181
+node1_port = 19101
+node2_port = 19102
+node1_ssh_port = 12301
+node2_ssh_port = 12302
+startup_timeout_seconds = 30
+state_directory = ".test_state/report-review"
+
+[database]
+host = "127.0.0.1"
+port = 19101
+database = "default"
+user = "default"
+password_env = "CH_DIAG_PASSWORD"
+cluster_name = "chdiag_cluster"
+
+[ssh]
+host = "127.0.0.1"
+port = 12301
+user = "chdiag"
+key = ".test_state/report-review/id_ed25519"
+known_hosts = ".test_state/report-review/known_hosts"
+
+[matrix]
+modes = ["local", "remote", "remote-db-only"]
+scopes = ["node", "cluster"]
+run_types = ["one-shot", "snapshots"]
+formats = ["html", "json"]
+output_root = "reports/review-matrix"
+snapshot_duration_seconds = 10
+snapshot_interval_seconds = 5
+snapshot_tags = []
+strict_collection = false
+
+[workload]
+# Keep this false for a read-only external review. Enable it only when the
+# dedicated chdiag_review database may be recreated and populated.
+enabled = false
+database = "chdiag_review"
+seed_rows = 250000
+insert_rows_per_batch = 25000
+interval_seconds = 0.35
+cpu_numbers_per_query = 3000000
+failed_query_every = 5
+
+[runtime]
+ch_diag_executable = ".venv/bin/ch-diag"
+browser_validation = true
+browser_executable = ""
+browser_timeout_seconds = 25

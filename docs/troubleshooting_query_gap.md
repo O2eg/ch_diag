@@ -8,7 +8,7 @@ they are not copied blindly.
 | Diagnostic | Disposition | ch_diag item / reason |
 |---|---|---|
 | Changed settings | covered | `overview.changed_settings` |
-| Table sizes | covered | legacy `db_top_tables` and storage breakdown |
+| Table sizes | covered | `db_top_tables` and storage breakdown |
 | Rows and daily growth | new_item P1 | deferred; requires safe date-range semantics |
 | Compression and primary index | new_item P0 | `dba_troubleshooting.column_compression`, `storage_breakdown` |
 | Queries per client | new_item P1 | deferred bounded historical item |
@@ -24,7 +24,7 @@ they are not copied blindly.
 | Merges with ETA | extend_existing P0 | `dba_troubleshooting.merges_eta` |
 | Frequent normalized query hash | new_item P0 | `dba_troubleshooting.frequent_queries` |
 | Part creation errors | new_item P0 | optional `dba_troubleshooting.part_log_errors` |
-| Number of tables by node | covered | cluster distribution legacy items |
+| Number of tables by node | covered | cluster distribution items |
 | Async insert activity | new_item P1 | deferred bounded historical item |
 | Active parts / excessive partitions | extend_existing P0 | `partition_part_counts` with raw rows and threshold flag |
 | Detached parts | covered | `databases_objects.db_detached_parts` |

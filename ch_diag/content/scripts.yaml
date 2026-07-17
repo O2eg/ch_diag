@@ -97,6 +97,36 @@ scripts:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      columns:
+        metric:
+          label: Metric
+        value_normalized:
+          label: Value
+          value_kind: integer
+          semantic_role: gauge
+          quantity_ref: quantity_normalized
+          unit_ref: unit_normalized
+          quality: exact
+          nullable: false
+          encoding: decimal_string
+        unit_normalized:
+          label: Unit
+          value_kind: text
+          semantic_role: state
+          quantity: unit_code
+          unit: none
+          quality: exact
+          nullable: false
+          encoding: json_string
+        quantity_normalized:
+          label: Quantity
+          value_kind: text
+          semantic_role: state
+          quantity: quantity_code
+          unit: none
+          quality: exact
+          nullable: false
+          encoding: json_string
   os.total_ram:
     title: Total RAM Capacity
     description: Exact total host RAM bytes from procfs.

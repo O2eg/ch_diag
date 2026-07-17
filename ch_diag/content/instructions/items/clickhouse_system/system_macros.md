@@ -1,19 +1,21 @@
 # List of macros (based on system.macros)
 
-Contains full output of system.macros
+This instruction belongs to report item `clickhouse_system.system_macros`.
 
-## Collection contract
+## What this item shows
+- Contains full output of system.macros.
+- The values come from ClickHouse system tables and describe the connected node or selected cluster scope.
 
-- Source: `query:legacy.system.system_macros`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Missing or duplicate shard/replica macros, or values inconsistent with Keeper paths.
 
-## Interpretation
+## Common fault causes
+- Copied configuration, wrong host identity, or rollout drift.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- The table is informational and shaped by the SQL variant for the nearest preceding supported LTS.
+- Visibility follows the diagnostic user's privileges; absence caused by unsupported capability is reported separately.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare macros with system.replicas paths.
+- Ensure replica macro uniqueness before ON CLUSTER/replicated DDL.

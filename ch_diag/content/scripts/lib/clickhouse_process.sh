@@ -2,6 +2,7 @@
 
 ch_diag_clickhouse_pid_from_socket() {
   ch_diag_port=$1
+  shift
   ch_diag_hex_port=$(printf '%04X' "$ch_diag_port" 2>/dev/null) || return 1
   ch_diag_inodes=$(
     awk -v port="$ch_diag_hex_port" '
@@ -12,7 +13,8 @@ ch_diag_clickhouse_pid_from_socket() {
     ' /proc/net/tcp /proc/net/tcp6 2>/dev/null
   )
   [ -n "$ch_diag_inodes" ] || return 1
-  for ch_diag_proc in /proc/[0-9]*; do
+  for ch_diag_candidate in "$@"; do
+    ch_diag_proc=/proc/$ch_diag_candidate
     [ -d "$ch_diag_proc/fd" ] || continue
     for ch_diag_fd in "$ch_diag_proc"/fd/*; do
       ch_diag_link=$(readlink "$ch_diag_fd" 2>/dev/null || true)
@@ -38,11 +40,6 @@ ch_diag_clickhouse_pid() {
   case "$ch_diag_port" in
     ''|*[!0-9]*) return 2 ;;
   esac
-  if ch_diag_selected=$(ch_diag_clickhouse_pid_from_socket "$ch_diag_port"); then
-    printf '%s\n' "$ch_diag_selected"
-    return 0
-  fi
-
   ch_diag_all=""
   ch_diag_matching=""
   for ch_diag_proc in /proc/[0-9]*; do
@@ -69,6 +66,13 @@ ch_diag_clickhouse_pid() {
   set -- $ch_diag_all
   if [ "$#" -eq 1 ]; then
     printf '%s\n' "$1"
+    return 0
+  fi
+  if [ "$#" -eq 0 ]; then
+    return 2
+  fi
+  if ch_diag_selected=$(ch_diag_clickhouse_pid_from_socket "$ch_diag_port" "$@"); then
+    printf '%s\n' "$ch_diag_selected"
     return 0
   fi
   return 3

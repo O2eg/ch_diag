@@ -1,19 +1,26 @@
 # Buses And Interfaces
 
-Hardware inventory from lshw class bus.
+This instruction belongs to report item `operating_system.lshw_bus`. The item is backed by `operating_system.lshw_bus` (local host script).
 
-## Collection contract
+## What this item shows
+- Hardware buses and interface inventory.
+- PCI/firmware topology relevant to storage and network devices.
 
-- Source: `script:os.lshw_bus`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Missing expected bus devices.
+- Unexpected virtual bus layout.
+- Devices attached through slower interface than expected.
 
-## Interpretation
+## Common fault causes
+- Driver or firmware issue.
+- VM configuration change.
+- Hardware replacement.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned without an expected hardware topology.
+- Empty class output is valid; an lshw warning means the inventory may be partial.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Use with network/storage lshw sections for device-specific checks.
+- Confirm device topology after hardware or VM changes.
+- Escalate missing hardware to platform team.

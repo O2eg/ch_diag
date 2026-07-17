@@ -1,19 +1,21 @@
 # All dictionaries stat (based on system.dictionaries)
 
-All dictionaries stat (based on system.dictionaries)
+This instruction belongs to report item `databases_objects.db_dictionaries`.
 
-## Collection contract
+## What this item shows
+- All dictionaries stat (based on system.dictionaries).
+- The result is a one-shot inventory from ClickHouse system metadata.
 
-- Source: `query:legacy.db.db_dictionaries`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- failed/stale dictionaries, unexpected sources, or large memory
 
-## Interpretation
+## Common fault causes
+- source outage/schema drift, config, or excess size; privilege/topology scope can also make inventory incomplete
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Rows are inventory/advisory evidence; successful SQL execution does not assert schema or storage health.
+- Cluster comparisons cover only reachable hosts in the selected cluster definition and visible objects.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Validate against intended schema/topology.
+- Correlate DDL, errors, replication, and storage before ALTER/ATTACH/DROP.

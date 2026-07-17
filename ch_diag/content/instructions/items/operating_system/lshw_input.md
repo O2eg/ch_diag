@@ -1,19 +1,24 @@
 # Input Devices
 
-Hardware inventory from lshw class input.
+This instruction belongs to report item `operating_system.lshw_input`. The item is backed by `operating_system.lshw_input` (local host script).
 
-## Collection contract
+## What this item shows
+- Input device inventory visible to lshw.
+- Incidental hardware inventory on the database host.
 
-- Source: `script:os.lshw_input`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected physical input devices on a server.
+- Inventory noise from virtual devices.
 
-## Interpretation
+## Common fault causes
+- Hypervisor exposing generic input devices.
+- Non-standard host image.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned; input devices are inventory-only evidence.
+- Empty output is normal on headless servers and many VMs.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Treat as inventory context only.
+- Ignore normal virtual input devices unless security policy requires review.
+- Do not use this item for database performance diagnosis.

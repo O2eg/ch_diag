@@ -1,19 +1,26 @@
 # CPU Information
 
-CPU architecture and topology from lscpu.
+This instruction belongs to report item `operating_system.cpu_info`. The item is backed by `operating_system.cpu_info` (local host script).
 
-## Collection contract
+## What this item shows
+- CPU topology, sockets, cores, threads, model, flags, and virtualization details from `lscpu`
+- Hardware context for parallel query, background workers, and CPU saturation analysis.
 
-- Source: `script:os.cpu_info`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Fewer CPUs than expected.
+- Disabled SMT or missing CPU flags required by extensions.
+- Virtualization or NUMA layout different from the intended platform.
 
-## Interpretation
+## Common fault causes
+- Wrong VM size.
+- BIOS or hypervisor CPU policy change.
+- Container CPU quota hiding actual host capacity.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned without an approved CPU/NUMA baseline.
+- `unsupported` means `lscpu` was unavailable; the output may reflect a VM or container namespace rather than physical hardware.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare CPU count with ClickHouse worker settings.
+- Check NUMA and virtualization notes before tuning CPU-bound workload.
+- Use CPU charts to confirm whether capacity is actually saturated.

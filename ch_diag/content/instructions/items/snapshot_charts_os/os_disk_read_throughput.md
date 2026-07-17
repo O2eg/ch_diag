@@ -1,19 +1,27 @@
 # Disk Read Throughput
 
-Disk Read Throughput
+This instruction belongs to report item `snapshot_charts_os.os_disk_read_throughput`. The item is backed by `os.disk_read_throughput` (snapshot metric).
 
-## Collection contract
+## What this item shows
+- Read throughput by block device over time.
+- Which device reads data during the capture window.
 
-- Source: `metric:os.disk_read_throughput`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Sustained high reads on database device.
+- Read spike during report or batch workload.
+- Reads aligned with ClickHouse shared block reads.
 
-## Interpretation
+## Common fault causes
+- Large scans.
+- Cold cache.
+- Backup or maintenance reads.
+- Index/table reads beyond memory.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- Values come from interval `iostat -dxk` reports and are informational; storage limits and topology are external context.
+- The first since-boot iostat report is discarded.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Map device to ClickHouse mount.
+- Compare with SQL shared I/O and table I/O.
+- Check disk latency before assuming throughput is healthy.

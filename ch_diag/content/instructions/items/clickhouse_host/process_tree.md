@@ -1,19 +1,21 @@
 # ClickHouse Server Process Tree
 
-Main ClickHouse server selected by the connected native port and its child processes.
+This instruction belongs to report item `clickhouse_host.process_tree`.
 
-## Collection contract
+## What this item shows
+- Main ClickHouse server selected by the connected native port and its child processes.
+- The process is selected from the database endpoint rather than from an arbitrary ClickHouse PID.
 
-- Source: `script:clickhouse.process_tree`.
-- Timing: `once`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected PID owner/executable, wrappers, extra child processes, duplicate instances, or mismatch with the DB endpoint.
 
-## Interpretation
+## Common fault causes
+- Wrong port mapping, stale/manual process, watchdog/sidecar behavior, or service compromise.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- This is a point-in-time host observation for the ClickHouse process selected from the connected native port.
+- Container, service-manager, ACL, and custom-path context can require additional checks.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Match PID/executable to service manager and Overview.
+- Use the same PID when reading process/thread charts.

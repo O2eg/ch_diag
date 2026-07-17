@@ -1,19 +1,20 @@
 # Column Compression And Key Flags
 
-Raw column sizes, compression ratio and primary/sorting-key membership.
+This instruction belongs to report item `dba_troubleshooting.column_compression`.
 
-## Collection contract
+## What this item shows
+- Compressed/uncompressed bytes by column plus ratio, type, and key membership.
 
-- Source: `query:troubleshooting.column_compression`.
-- Timing: `once`.
-- Cost class: `high`.
-- Privilege profile: `clickhouse_system_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Large columns with poor compression, unexpected codecs, or key columns consuming disproportionate space.
 
-## Interpretation
+## Common fault causes
+- High-entropy values, unsuitable types/codecs, duplication, schema drift, or tiny parts.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No universal ratio threshold exists; prioritize absolute bytes.
+- Only visible active parts are included.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Rank by raw bytes before optimizing ratios.
+- Test codec/type changes on representative data and compare query CPU.

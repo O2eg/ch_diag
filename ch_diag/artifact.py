@@ -49,6 +49,7 @@ def create_artifact(
         "mode": plan.mode,
         "collection_mode": plan.collection_mode,
         "target_scope": target.scope,
+        "sql_compatibility_lts": plan.compatibility_lts_version,
         "cluster_name": target.cluster_name,
         "collector_host": socket.gethostname(),
         "collector_user": getpass.getuser(),
@@ -76,6 +77,7 @@ def create_artifact(
         "database": {
             "engine": "clickhouse",
             "server_version": runtime_context.get("server_version"),
+            "sql_compatibility_lts": plan.compatibility_lts_version,
         },
         "target": {
             "execution_scope": target.scope,

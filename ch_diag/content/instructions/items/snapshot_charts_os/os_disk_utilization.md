@@ -1,19 +1,27 @@
 # Disk Utilization
 
-Disk Utilization
+This instruction belongs to report item `snapshot_charts_os.os_disk_utilization`. The item is backed by `os.disk_utilization` (snapshot metric).
 
-## Collection contract
+## What this item shows
+- Device busy percentage over time.
+- Whether a block device is saturated during the capture.
 
-- Source: `metric:os.disk_utilization`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Sustained utilization near 100 percent.
+- Utilization high while latency rises.
+- One device saturated while others are idle.
 
-## Interpretation
+## Common fault causes
+- Storage bottleneck.
+- Merge, mutation, or replication-recovery burst.
+- Bulk inserts or temporary query spill.
+- Noisy neighbor on shared storage.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- This chart is informational; `%util` saturation semantics differ for rotating, SSD, virtual, and parallel devices.
+- Always interpret utilization with latency and queue depth.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Correlate with disk latency and ClickHouse I/O.
+- Identify which ClickHouse path is on the saturated device.
+- Avoid tuning SQL until storage saturation is understood.

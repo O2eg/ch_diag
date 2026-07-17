@@ -1,19 +1,26 @@
 # Processor Hardware
 
-Hardware inventory from lshw class processor.
+This instruction belongs to report item `operating_system.lshw_processor`. The item is backed by `operating_system.lshw_processor` (local host script).
 
-## Collection contract
+## What this item shows
+- Processor hardware inventory from lshw.
+- CPU model and hardware capability context.
 
-- Source: `script:os.lshw_processor`.
-- Timing: `once`.
-- Cost class: `medium`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Unexpected CPU model or count.
+- Different CPU generation across nodes.
+- Missing hardware data.
 
-## Interpretation
+## Common fault causes
+- VM resized incorrectly.
+- Host migration to different CPU class.
+- lshw permission limits.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- No severity is assigned without an approved CPU baseline.
+- Empty or partial lshw output should be cross-checked with `CPU Information` from `lscpu`.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Compare with `CPU Information`
+- Check extension or JIT assumptions that depend on CPU features.
+- Confirm primary and standby CPU class consistency.

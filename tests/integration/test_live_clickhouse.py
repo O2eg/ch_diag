@@ -16,9 +16,8 @@ from ch_diag.clickhouse import (
 from ch_diag.collector import collect_one_shot, collect_snapshots
 from ch_diag.content_loader import load_content
 from ch_diag.host_scripts import load_host_script, render_host_script
-from ch_diag.planner import build_plan
 from ch_diag.ssh_transport import SshConfig, SshSession
-from ch_diag.versioning import ClickHouseVersion
+from ch_diag.versioning import ClickHouseVersion, select_variant
 
 
 pytestmark = pytest.mark.integration
@@ -93,32 +92,43 @@ async def assert_applicable_sql(scope: str, cluster_name: str | None = None) -> 
     try:
         context = await adapter.detect_runtime_context()
         version = ClickHouseVersion.parse(context["server_version"])
-        plan = build_plan(
-            content,
-            version,
-            mode="one-shot",
-            collection_mode="remote-db-only",
-            target_scope=scope,
-        )
         failures = []
         target = TargetContext(scope, cluster_name)
-        for item in plan.items:
-            if item.status != "planned" or item.source_kind != "query":
+        applicable = []
+        unavailable = []
+        executed = []
+        for query_id, manifest in content.queries.items():
+            variant = select_variant(
+                list(manifest.get("variants") or []),
+                version,
+                scope,
+                content.supported_lts_versions,
+            )
+            if variant is None:
                 continue
-            manifest = content.queries[item.source_id]
+            applicable.append(query_id)
             supported, _reason = await adapter.supports_requirements(manifest.get("requires"))
             if not supported:
+                unavailable.append(query_id)
                 continue
-            sql = (content.path / "queries" / str(item.sql_file)).read_text(encoding="utf-8")
+            sql = (content.path / "queries" / str(variant["sql_file"])).read_text(
+                encoding="utf-8"
+            )
             result = await adapter.execute_query(
                 sql,
                 target=target,
                 timeout_seconds=float(manifest.get("timeout_seconds", 15)),
                 optional_capability=bool(manifest.get("optional")),
             )
+            executed.append(query_id)
             if result["collection_status"] not in {"ok", "empty", "unsupported"}:
-                failures.append((item.item_id, result["collection_status"], result.get("reason")))
-        assert failures == []
+                failures.append((query_id, result["collection_status"], result.get("reason")))
+        assert set(executed) | set(unavailable) == set(applicable)
+        assert applicable
+        assert failures == [], "\n".join(
+            f"{query_id}: {status}: {reason}"
+            for query_id, status, reason in failures
+        )
     finally:
         await adapter.close()
 
@@ -255,7 +265,14 @@ def test_collection_lifecycle_in_all_connection_modes(tmp_path: Path) -> None:
             snapshot_ids = ["snapshot_charts_clickhouse.query_rate"]
             if mode != "remote-db-only":
                 one_shot_ids.append("operating_system.os_release")
-                snapshot_ids.append("snapshot_charts_os.os_cpu_utilization")
+                snapshot_ids.extend(
+                    [
+                        "snapshot_charts_os.os_cpu_utilization",
+                        "snapshot_charts_os.os_disk_read_throughput",
+                        "snapshot_charts_clickhouse.process_memory",
+                        "snapshot_charts_clickhouse.thread_pool_usage",
+                    ]
+                )
 
             one_shot_dir = tmp_path / mode / "one-shot"
             one_shot = await collect_one_shot(

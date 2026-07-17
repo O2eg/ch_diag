@@ -6,8 +6,9 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable
 
 from .content_loader import ContentPack, iter_report_items
+from .errors import UnsupportedClickHouseVersion
 from .runtime_config import REMOTE_DB_ONLY_COLLECTION_MODE, SNAPSHOTS_MODE
-from .versioning import ClickHouseVersion, select_variant
+from .versioning import ClickHouseVersion, resolve_lts_branch, select_variant
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class ExecutionPlan:
     collection_mode: str
     target_scope: str
     server_version: ClickHouseVersion
+    compatibility_lts_version: str
     sections: list[dict[str, Any]]
     items: list[PlannedItem]
 
@@ -75,6 +77,16 @@ def build_plan(
     item_ids: str | Iterable[str] | None = None,
     tags: str | Iterable[str] | None = None,
 ) -> ExecutionPlan:
+    compatibility_lts_version = resolve_lts_branch(
+        server_version,
+        content.supported_lts_versions,
+    )
+    if compatibility_lts_version is None:
+        supported = ", ".join(content.supported_lts_versions)
+        raise UnsupportedClickHouseVersion(
+            f"ClickHouse {server_version} predates the earliest supported LTS branch; "
+            f"LTS compatibility anchors: {supported}"
+        )
     requested_items = _normalized_filter(item_ids)
     requested_tags = _normalized_filter(tags)
     if requested_items is not None and requested_tags is not None:
@@ -124,7 +136,12 @@ def build_plan(
         variant_id = sql_file = script_file = None
         if source_kind == "query":
             query = content.queries[source_id]
-            variant = select_variant(list(query.get("variants") or []), server_version, target_scope)
+            variant = select_variant(
+                list(query.get("variants") or []),
+                server_version,
+                target_scope,
+                content.supported_lts_versions,
+            )
             if variant is None:
                 status = "skipped"
                 reason = f"no {target_scope} SQL variant for ClickHouse {server_version}"
@@ -154,7 +171,10 @@ def build_plan(
                 reason = "host collection is unavailable in remote-db-only mode"
         elif source_kind == "metric":
             metric = content.metrics[source_id]
-            metadata["chart"] = dict(metric.get("chart") or {})
+            if (metric.get("result_contract") or {}).get("kind") == "table":
+                metadata["display"] = dict(metric.get("display") or {})
+            else:
+                metadata["chart"] = dict(metric.get("chart") or {})
             if mode != SNAPSHOTS_MODE:
                 status = "skipped"
                 reason = "requires snapshots mode"
@@ -198,6 +218,7 @@ def build_plan(
         collection_mode=collection_mode,
         target_scope=target_scope,
         server_version=server_version,
+        compatibility_lts_version=compatibility_lts_version,
         sections=sections,
         items=items,
     )

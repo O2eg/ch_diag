@@ -1,19 +1,27 @@
 # Disk Latency
 
-Disk Latency
+This instruction belongs to report item `snapshot_charts_os.os_disk_latency`. The item is backed by `os.disk_latency` (snapshot metric).
 
-## Collection contract
+## What this item shows
+- Read and write latency by device over time.
+- Storage response time during the capture window.
 
-- Source: `metric:os.disk_latency`.
-- Timing: `every_snapshot`.
-- Cost class: `low`.
-- Privilege profile: `host_read`.
-- Values remain raw in JSON; adaptive units are a renderer concern.
+## What to watch
+- Latency spikes on ClickHouse data, temporary, or log devices.
+- Sustained high write latency during merges, mutations, or inserts.
+- Read latency aligned with query slowdown.
 
-## Interpretation
+## Common fault causes
+- Slow storage.
+- Queueing from high IOPS.
+- Merge, mutation, insert, or fsync pressure.
+- Shared storage contention.
 
-Compare the result with the target topology, collection timestamp and adjacent items. An empty result is not automatically an error; inspect collection status and diagnostics.
+## Automatic evaluation
+- `await` is the combined average and read/write await are separate line series; they are not added.
+- No fixed severity is assigned because latency targets depend on device and workload.
 
-## Limitations
-
-The collector applies time, row, byte and artifact budgets. Version or privilege gaps are reported explicitly and an inapplicable item is omitted from the final report.
+## Checklist
+- Map devices to ClickHouse data, temporary, log, and backup paths.
+- Compare with merge/file-I/O charts, current merges, and query latency.
+- Investigate storage before changing query plans when latency dominates.
