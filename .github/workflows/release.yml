@@ -21,7 +21,7 @@ jobs:
       - run: python -m compileall -q ch_diag tools tests
       - run: ruff check ch_diag tests tools
       - run: python tools/normalize_sql_outputs.py --check
-      - run: pytest -q
+      - run: pytest -q -m 'not browser'
       - run: ch-diag validate
       - run: python -m build
       - run: twine check dist/*

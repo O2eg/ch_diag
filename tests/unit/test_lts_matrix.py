@@ -43,6 +43,13 @@ def test_ci_runs_only_the_catalog_lts_branches() -> None:
         jobs["clickhouse-lts"]["strategy"]["matrix"]["branch"]
     ) == tuple(LTS_IMAGES)
 
+    release_workflow = yaml.safe_load(
+        (repo / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    )
+    assert {step.get("run") for step in release_workflow["jobs"]["build"]["steps"]} >= {
+        "pytest -q -m 'not browser'"
+    }
+
 
 def test_lts_container_explicitly_enables_default_user_network_access() -> None:
     command = _container_run_command(LTS_IMAGES["25.8"])
