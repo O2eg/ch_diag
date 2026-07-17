@@ -168,6 +168,25 @@ def _container_image(name: str) -> str | None:
     return result.stdout.strip()
 
 
+def _container_run_command(image: LTSImage) -> list[str]:
+    return [
+        "docker",
+        "run",
+        "--detach",
+        "--name",
+        image.container_name,
+        "--platform",
+        "linux/amd64",
+        "--ulimit",
+        "nofile=262144:262144",
+        "--env",
+        "CLICKHOUSE_SKIP_USER_SETUP=1",
+        "--publish",
+        f"127.0.0.1:{image.host_port}:9000",
+        image.reference,
+    ]
+
+
 def ensure_container(image: LTSImage) -> None:
     existing_image = _container_image(image.container_name)
     if existing_image is not None:
@@ -181,22 +200,7 @@ def ensure_container(image: LTSImage) -> None:
         return
 
     print(f"START {image.container_name} from {image.reference}", flush=True)
-    _run(
-        [
-            "docker",
-            "run",
-            "--detach",
-            "--name",
-            image.container_name,
-            "--platform",
-            "linux/amd64",
-            "--ulimit",
-            "nofile=262144:262144",
-            "--publish",
-            f"127.0.0.1:{image.host_port}:9000",
-            image.reference,
-        ]
-    )
+    _run(_container_run_command(image))
 
 
 def wait_until_ready(image: LTSImage, timeout_seconds: float) -> None:

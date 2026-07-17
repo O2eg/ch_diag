@@ -1,11 +1,1 @@
-select
-	_shard_num,
-	hostName() as host_name,
-	name,
-	last_error_time,
-	code,
-	value,
-	remote
-from clusterAllReplicas({{cluster}}, system.errors)
-order by _shard_num, host_name, last_error_time desc
-limit 100;
+select 'last error details are not available in the ClickHouse 21.3 LTS compatibility profile' as Warning;

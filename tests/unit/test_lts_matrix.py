@@ -6,7 +6,11 @@ import yaml
 
 from tools.normalize_sql_outputs import normalize_sql
 from ch_diag.content_loader import load_content
-from tools.run_lts_clickhouse_matrix import LTS_IMAGES, compatible_architecture
+from tools.run_lts_clickhouse_matrix import (
+    LTS_IMAGES,
+    _container_run_command,
+    compatible_architecture,
+)
 
 
 def test_lts_matrix_is_complete_and_pinned() -> None:
@@ -31,9 +35,19 @@ def test_ci_runs_only_the_catalog_lts_branches() -> None:
     )
     jobs = workflow["jobs"]
     assert "clickhouse-legacy" not in jobs
+    assert "browser" not in jobs
+    assert {step.get("run") for step in jobs["python"]["steps"]} >= {
+        "pytest -q -m 'not browser'"
+    }
     assert tuple(
         jobs["clickhouse-lts"]["strategy"]["matrix"]["branch"]
     ) == tuple(LTS_IMAGES)
+
+
+def test_lts_container_explicitly_enables_default_user_network_access() -> None:
+    command = _container_run_command(LTS_IMAGES["25.8"])
+    environment_index = command.index("--env")
+    assert command[environment_index + 1] == "CLICKHOUSE_SKIP_USER_SETUP=1"
 
 
 def test_lts_architecture_gate() -> None:

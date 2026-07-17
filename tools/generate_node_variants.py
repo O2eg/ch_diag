@@ -100,10 +100,11 @@ def generate(repo: Path) -> tuple[int, int]:
             generated_variants += 1
         query.setdefault("variants", []).extend(additions)
 
-    catalog_path.write_text(
-        yaml.safe_dump(catalog, sort_keys=False, allow_unicode=True, width=100),
-        encoding="utf-8",
-    )
+    if generated_variants:
+        catalog_path.write_text(
+            yaml.safe_dump(catalog, sort_keys=False, allow_unicode=True, width=100),
+            encoding="utf-8",
+        )
     return generated_files, generated_variants
 
 

@@ -4,8 +4,7 @@ select
 	hostName() as host_name,
 	name,
 	code,
-	value,
-	remote
+	value
 from (SELECT 1 AS _shard_num, 1 AS _replica_num, * FROM system.errors)
 order by _shard_num, host_name, value desc
 limit 100;
