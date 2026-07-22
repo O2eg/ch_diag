@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ch-diag"
 version = "0.8.0"
-description = "Declarative ClickHouse diagnostic report utility"
+description = "ClickHouse diagnostics with host metrics and portable JSON/HTML reports"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT AND BSD-3-Clause AND Apache-2.0"
