@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ch-diag"
-version = "0.8.1"
+version = "0.8.2"
 description = "ClickHouse diagnostics with host metrics and portable JSON/HTML reports"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -47,7 +47,7 @@ dev = [
   "jsonschema>=4.20",
   "pytest>=7.4",
   "pytest-cov>=4.1",
-  "ruff>=0.5",
+  "ruff>=0.5,<0.6",
   "tomli>=2.0; python_version < '3.11'",
 ]
 browser = ["playwright>=1.45"]
