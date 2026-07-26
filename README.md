@@ -147,7 +147,7 @@ The deterministic precedence is `explicit CLI > CH_DIAG_* environment > TOML
 lists and can then be repeated. Supported environment names follow CLI names,
 for example `CH_DIAG_HOST`, `CH_DIAG_PORT`, `CH_DIAG_COLLECTION_MODE`,
 `CH_DIAG_TARGET_SCOPE`, `CH_DIAG_OUTPUT_FORMAT`, `CH_DIAG_SSH_HOST` and
-`CH_DIAG_DURATION`. Run `ch-diag --help` and the command help for the full CLI.
+`CH_DIAG_SSH_AGENT`. Run `ch-diag --help` and the command help for the full CLI.
 
 Literal passwords are deliberately rejected in TOML. Put only
 `password_env = "CH_DIAG_PASSWORD"` in the file and supply the secret through
@@ -324,8 +324,10 @@ Node is the default and does not require a configured cluster.
 
 ## SSH mode and known hosts
 
-SSH is key-only. `--ssh-known-hosts` is mandatory and host-key verification is
-never silently disabled. Prepare a dedicated file before the first run:
+SSH uses explicit public-key authentication through either a key file or an
+existing local agent. `--ssh-known-hosts` is mandatory and host-key
+verification is never silently disabled. Prepare a dedicated file before the
+first run:
 
 ```bash
 mkdir -p ~/.ssh
@@ -349,6 +351,31 @@ ch-diag snapshots \
   --duration 10 --interval 5 \
   --out-dir reports/remote
 ```
+
+Alternatively, load the identity into a local agent and replace `--ssh-key`
+with `--ssh-agent`:
+
+```bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/ch_diag_ed25519
+ssh-add -l
+
+ch-diag snapshots \
+  --host 127.0.0.1 --port 9000 \
+  --collection-mode remote --target-scope node \
+  --ssh-host db-host.example.net --ssh-port 22 \
+  --ssh-user chdiag --ssh-agent \
+  --ssh-known-hosts ~/.ssh/ch_diag_known_hosts \
+  --duration 10 --interval 5 \
+  --out-dir reports/remote
+```
+
+`--ssh-key` and `--ssh-agent` are mutually exclusive. Agent mode requires a
+live Unix socket in the inherited `SSH_AUTH_SOCK` for the complete collection.
+`ch-diag` does not start an agent, run `ssh-add`, or forward the agent to the
+target. Key mode explicitly disables fallback to identities from an agent.
+TOML may select agent mode with `agent = true` in `[ssh]`; the corresponding
+environment switch is `CH_DIAG_SSH_AGENT=true`.
 
 `--host` and `--port` in this mode are resolved from the SSH target. The
 ClickHouse native connection travels through the tunnel; shell scripts execute

@@ -42,6 +42,7 @@ CONFIG_FIELDS: dict[str, dict[str, str]] = {
         "port": "ssh_port",
         "user": "ssh_user",
         "key": "ssh_key",
+        "agent": "ssh_agent",
         "known_hosts": "ssh_known_hosts",
     },
     "snapshots": {"duration": "duration", "interval": "interval"},
@@ -75,12 +76,13 @@ ENV_FIELDS = {
     "CH_DIAG_SSH_PORT": "ssh_port",
     "CH_DIAG_SSH_USER": "ssh_user",
     "CH_DIAG_SSH_KEY": "ssh_key",
+    "CH_DIAG_SSH_AGENT": "ssh_agent",
     "CH_DIAG_SSH_KNOWN_HOSTS": "ssh_known_hosts",
     "CH_DIAG_DURATION": "duration",
     "CH_DIAG_INTERVAL": "interval",
 }
 
-BOOLEAN_FIELDS = {"secure", "no_verify", "strip_meta"}
+BOOLEAN_FIELDS = {"secure", "no_verify", "strip_meta", "ssh_agent"}
 INTEGER_FIELDS = {"port", "ssh_port"}
 FLOAT_FIELDS = {"duration", "interval"}
 LIST_FIELDS = {"item_ids", "tags", "output_format"}
@@ -142,6 +144,12 @@ def resolve_cli_defaults(
             raise ValueError(
                 "unknown configuration section(s): " + ", ".join(unknown_sections)
             )
+        ssh_values = document.get("ssh") or {}
+        if isinstance(ssh_values, dict) and ssh_values.get("key") and _boolean(
+            ssh_values.get("agent", False),
+            "configuration [ssh].agent",
+        ):
+            raise ValueError("configuration [ssh] must select either key or agent")
         for section, fields in CONFIG_FIELDS.items():
             values = document.get(section) or {}
             if not isinstance(values, dict):
@@ -160,6 +168,21 @@ def resolve_cli_defaults(
                 )
 
     env = environment if environment is not None else os.environ
+    env_key_present = "CH_DIAG_SSH_KEY" in env
+    env_agent_present = "CH_DIAG_SSH_AGENT" in env
+    env_agent_enabled = (
+        _boolean(env["CH_DIAG_SSH_AGENT"], "environment variable CH_DIAG_SSH_AGENT")
+        if env_agent_present
+        else False
+    )
+    if env_key_present and env.get("CH_DIAG_SSH_KEY") and env_agent_enabled:
+        raise ValueError(
+            "environment must select either CH_DIAG_SSH_KEY or CH_DIAG_SSH_AGENT"
+        )
+    if env_key_present:
+        defaults["ssh_agent"] = False
+    if env_agent_enabled:
+        defaults["ssh_key"] = None
     for name, destination in ENV_FIELDS.items():
         if name in env:
             defaults[destination] = _coerce(

@@ -1,9 +1,10 @@
-"""Key-only SSH transport with mandatory known_hosts verification."""
+"""Explicit key-or-agent SSH transport with mandatory known_hosts verification."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+import stat
 from typing import Any
 
 from .errors import ChDiagError
@@ -24,18 +25,32 @@ def _asyncssh():
 class SshConfig:
     host: str
     username: str
-    client_key: str
     known_hosts: str
+    client_key: str | None = None
+    agent_path: str | None = None
     port: int = 22
     connect_timeout: float = 10.0
 
     def validate(self) -> None:
         if not self.host or not self.username:
             raise ValueError("SSH host and username are required")
-        for label, value in (("SSH private key", self.client_key), ("known_hosts", self.known_hosts)):
-            path = Path(value).expanduser()
-            if not path.is_file():
-                raise ValueError(f"{label} file does not exist: {path}")
+        if bool(self.client_key) == bool(self.agent_path):
+            raise ValueError("SSH requires exactly one private key or agent socket")
+        if self.client_key:
+            key_path = Path(self.client_key).expanduser()
+            if not key_path.is_file():
+                raise ValueError(f"SSH private key file does not exist: {key_path}")
+        if self.agent_path:
+            agent_path = Path(self.agent_path).expanduser()
+            try:
+                mode = agent_path.stat().st_mode
+            except OSError as exc:
+                raise ValueError(f"SSH agent socket is not available: {agent_path}") from exc
+            if not stat.S_ISSOCK(mode):
+                raise ValueError(f"SSH_AUTH_SOCK is not a socket: {agent_path}")
+        known_hosts = Path(self.known_hosts).expanduser()
+        if not known_hosts.is_file():
+            raise ValueError(f"known_hosts file does not exist: {known_hosts}")
 
 
 class SshSession:
@@ -48,16 +63,25 @@ class SshSession:
     async def connect(cls, config: SshConfig) -> "SshSession":
         config.validate()
         asyncssh = _asyncssh()
+        client_keys = (
+            [str(Path(config.client_key).expanduser())] if config.client_key else []
+        )
+        agent_path = (
+            str(Path(config.agent_path).expanduser()) if config.agent_path else None
+        )
         try:
             connection = await asyncssh.connect(
                 config.host,
                 port=config.port,
                 username=config.username,
-                client_keys=[str(Path(config.client_key).expanduser())],
+                client_keys=client_keys,
                 known_hosts=str(Path(config.known_hosts).expanduser()),
+                config=None,
+                preferred_auth=["publickey"],
                 password_auth=False,
                 kbdint_auth=False,
-                agent_path=None,
+                agent_path=agent_path,
+                agent_forwarding=False,
                 connect_timeout=config.connect_timeout,
             )
         except Exception as exc:

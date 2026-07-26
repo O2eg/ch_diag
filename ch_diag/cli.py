@@ -55,6 +55,39 @@ class _OverrideAppendAction(argparse.Action):
         setattr(namespace, self.dest, current)
 
 
+class _SshKeyAction(argparse.Action):
+    """Select key-file auth and override an agent default from config or env."""
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: str,
+        option_string: str | None = None,
+    ) -> None:
+        del parser, option_string
+        namespace.ssh_key = values
+        namespace.ssh_agent = False
+
+
+class _SshAgentAction(argparse.Action):
+    """Select agent auth and override a key default from config or env."""
+
+    def __init__(self, option_strings: Sequence[str], dest: str, **kwargs: Any) -> None:
+        super().__init__(option_strings, dest, nargs=0, **kwargs)
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: Any,
+        option_string: str | None = None,
+    ) -> None:
+        del parser, values, option_string
+        namespace.ssh_agent = True
+        namespace.ssh_key = None
+
+
 def _parser(defaults: dict[str, Any] | None = None) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ch-diag", description="ClickHouse diagnostics")
     parser.add_argument("--config", help="TOML configuration file (must precede command)")
@@ -152,7 +185,14 @@ def _add_collection_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--ssh-host")
     parser.add_argument("--ssh-port", type=int, default=22)
     parser.add_argument("--ssh-user")
-    parser.add_argument("--ssh-key")
+    ssh_auth = parser.add_mutually_exclusive_group()
+    ssh_auth.add_argument("--ssh-key", action=_SshKeyAction)
+    ssh_auth.add_argument(
+        "--ssh-agent",
+        action=_SshAgentAction,
+        default=False,
+        help="authenticate through the existing SSH_AUTH_SOCK agent",
+    )
     parser.add_argument("--ssh-known-hosts")
 
 
@@ -200,18 +240,35 @@ def _connection(args: argparse.Namespace) -> ConnectionConfig:
 
 
 def _ssh_config(args: argparse.Namespace) -> SshConfig | None:
-    values = (args.ssh_host, args.ssh_user, args.ssh_key, args.ssh_known_hosts)
+    values = (
+        args.ssh_host,
+        args.ssh_user,
+        args.ssh_key,
+        args.ssh_agent,
+        args.ssh_known_hosts,
+    )
     if not any(values):
         return None
-    if not all(values):
+    if not args.ssh_host or not args.ssh_user or not args.ssh_known_hosts:
         raise ValueError(
-            "SSH requires --ssh-host, --ssh-user, --ssh-key and --ssh-known-hosts"
+            "SSH requires --ssh-host, --ssh-user, --ssh-known-hosts and "
+            "exactly one of --ssh-key or --ssh-agent"
         )
+    if bool(args.ssh_key) == bool(args.ssh_agent):
+        raise ValueError("SSH requires exactly one of --ssh-key or --ssh-agent")
+    agent_path = None
+    if args.ssh_agent:
+        agent_path = os.environ.get("SSH_AUTH_SOCK")
+        if not agent_path:
+            raise ValueError(
+                "--ssh-agent requires SSH_AUTH_SOCK to reference a running agent"
+            )
     return SshConfig(
         host=args.ssh_host,
         port=args.ssh_port,
         username=args.ssh_user,
         client_key=args.ssh_key,
+        agent_path=agent_path,
         known_hosts=args.ssh_known_hosts,
     )
 

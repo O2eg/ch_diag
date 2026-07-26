@@ -11,7 +11,8 @@ it redacts, and what remains sensitive in a report.
   statement and runs with ClickHouse `readonly=2`, timeout, row and byte guards.
 - Cluster names are selected from `system.clusters` and quoted by the adapter.
 - Host scripts are package content, not user-supplied commands. Remote mode
-  requires key authentication and a verified `known_hosts` file.
+  requires explicit key-file or local-agent authentication and a verified
+  `known_hosts` file. Agent forwarding is always disabled.
 - The checksum detects corruption or replacement relative to its installed
   baseline. It cannot authenticate an attacker who can replace both Python
   code and the checksum manifest; package provenance and filesystem ownership
@@ -22,8 +23,9 @@ it redacts, and what remains sensitive in a report.
 Passwords should be supplied by a prompt or an environment variable named by
 `password_env`. Literal TOML passwords are rejected. Passwords, private-key
 contents and authentication options are not written to stdout, logs or
-artifacts. CLI password arguments remain visible to local process inspection
-and are therefore discouraged.
+artifacts. The local agent socket pathname can appear in validation errors; it
+should not contain sensitive naming. CLI password arguments remain visible to
+local process inspection and are therefore discouraged.
 
 `--strip-meta` removes embedded vendor SQL/shell sources, instructions,
 manifests, provenance and the HTML metadata controls. It does not redact values
