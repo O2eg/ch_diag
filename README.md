@@ -19,6 +19,8 @@ assets and does not require `pg_diag`, a CDN or Internet access at runtime.
   supported Python, ClickHouse and host-tool versions.
 - [Troubleshooting query gap map](https://github.com/O2eg/ch_diag/blob/main/docs/troubleshooting_query_gap.md) —
   coverage of the ClickHouse troubleshooting knowledge base.
+- [Machine orchestration contract](https://github.com/O2eg/ch_diag/blob/main/docs/orchestration.md) —
+  versioned envelopes, capabilities, deterministic summaries and machine exit codes.
 
 Quick navigation: [install](#install), [runtime requirements](#runtime-requirements),
 [configuration](#configuration-and-precedence), [content inspection](#inspect-and-validate-content),
@@ -101,7 +103,10 @@ The ClickHouse process probe also reads `/proc/PID/task`: per-TID CPU is
 available with normal procfs access, while per-TID I/O can require the
 diagnostics account to match the ClickHouse service user or have equivalent
 ptrace permission. Linux RSS is intentionally not reported per thread because
-ClickHouse threads share one process address space.
+ClickHouse threads share one process address space. Thread sampling discovers
+and ranks the process threads once, retains at most 2,000 TIDs for the sampling
+window and reads I/O only for that stable selection. Reports expose selection
+and capture gaps instead of implying complete thread coverage.
 
 Missing host commands affect only the corresponding attempted item. Use
 `remote-db-only` when host evidence is not required: no host script or sampler
@@ -305,8 +310,9 @@ ch-diag snapshots \
 ```
 
 `snapshots` takes samples at the beginning, each interval and the end. A
-counter chart needs the initial endpoint plus later samples; resets become
-gaps instead of negative rates.
+counter chart needs the initial endpoint plus later samples; resets and
+declared metric epoch changes become gaps instead of false rates, including
+when a restarted counter has already overtaken its pre-restart value.
 
 Cluster-wide SQL uses an allow-listed name read from `system.clusters`:
 
@@ -423,6 +429,13 @@ An unknown item or tag is a command error and is named explicitly. Use
 `explain-plan --ch-version 25.8 ...` to inspect version/scope selection without
 connecting to a server.
 
+For explicit node-scope filters, `ch_diag` resolves the required transports
+before connecting. A selection containing only OS scripts can therefore run in
+`local` mode without ClickHouse being reachable; in `remote` mode it opens only
+the verified SSH session. Selected non-hidden items and their sections start
+expanded. Cluster target discovery and any SQL-backed item still require the
+ClickHouse connection.
+
 ## Minimal diagnostics user
 
 Use a dedicated read-only identity. A minimal current-version fixture can be
@@ -485,10 +498,14 @@ artifact is written even when an item fails.
 
 | Exit status | Meaning |
 |---:|---|
-| `0` | Command completed and no retained item has `collection_status=error` |
-| `1` | A report was written with at least one retained item error |
+| `0` | Report `completion_status` is `succeeded` |
+| `1` | A report was written with `partial` or `failed` completeness |
 | `2` | Invalid arguments, content/configuration rejection, connection failure or another command-level error |
 | `130` | Interrupted with `Ctrl-C`; do not assume artifacts are complete |
+
+The JSON runtime records `completion_status` and `collection_summary`.
+`timeout`, `permission_denied`, unexpected item errors and explicitly incomplete
+coverage prevent a false successful exit even when other items were collected.
 
 ## Automation use cases
 
@@ -530,6 +547,21 @@ values as lossless decimal strings, and distinguishes `ok`, `empty`, `error`,
 suitable for deterministic software and agentic review without parsing HTML.
 The packaged formal contract is the
 [artifact-v5 JSON schema](https://github.com/O2eg/ch_diag/blob/main/ch_diag/schemas/artifact-v5.schema.json).
+
+For stable orchestration output, place the hidden machine options before the
+command:
+
+```bash
+ch-diag --machine --component-capabilities
+ch-diag --machine --request-id diag-001 explain-plan \
+  --ch-version 25.8 --run-mode snapshots \
+  --collection-mode remote-db-only --target-scope node
+ch-diag --machine --request-id diag-002 summarize reports/node/report.json
+```
+
+Machine mode emits exactly one `pg_play/component/v1` JSON envelope on stdout.
+Normal progress is retained as command output inside the envelope; warnings are
+redacted and returned separately. See [the machine contract](docs/orchestration.md).
 
 ## Report contents
 

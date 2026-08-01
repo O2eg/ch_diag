@@ -62,6 +62,46 @@ Item IDs are the public filter keys accepted by `--item-id`; source IDs are
 internal catalog keys. Tags must come from `report.allowed_item_tags` and are
 matched case-insensitively with OR semantics by `--tags`. `state` is
 `expanded`, `collapsed` or `hidden` and controls only initial presentation.
+An explicit item/tag filter expands its retained sections and non-hidden items.
+The planner derives `host` and `database` targets before opening resources, so
+a node-scope selection containing only scripts or sampler metrics can run
+without creating a ClickHouse adapter. Cluster target resolution still needs a
+database connection.
+
+### Failure fallbacks
+
+A report item may opt into one registered replacement source. Fallback items
+are never independently planned or displayed:
+
+```yaml
+fallback_items:
+  fallback.example.lightweight:
+    title: Lightweight replacement
+    query: example.lightweight
+    instruction: instructions/fallback_items/example/lightweight.md
+
+sections:
+  example:
+    items:
+      expensive:
+        query: example.expensive
+        tags: [Queries]
+        fallback_item: fallback.example.lightweight
+        fallback_on: [query_timeout, read_limit]
+```
+
+`fallback_on` is mandatory, explicit and limited to normalized failure kinds:
+`query_timeout`, `transport_disconnect`, `permission_denied`,
+`unsupported_capability`, `read_limit`, `result_limit`, `query_canceled` and
+`shell_timeout`. A successful replacement keeps the parent item ID, records
+both timings and the primary diagnostics/instructions, and marks the report
+`degraded`; unrelated failures never activate the fallback.
+Fallback instructions use the same ordered DBA runbook contract as ordinary
+report items.
+The bundled report registers ClickHouse-specific degraded sources for selected
+query-log aggregations, ProfileEvents expansion and partition-level part
+analysis. They intentionally return coarser evidence instead of retrying the
+same expensive SQL under a different name.
 
 The current pack contains query, script and metric items. It intentionally has
 no trusted Python content sources: product-independent behavior belongs in the
@@ -93,6 +133,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 100
 ```
 
 `query_catalog.supported_lts_versions` is the only SQL compatibility matrix.
@@ -104,20 +145,36 @@ earliest supported LTS are rejected. Node and cluster remain explicit
 contracts; node SQL must not contain the `{{cluster}}` placeholder, and the
 runtime does not invent a node query from cluster SQL.
 
+`result_contract.row_limit` declares the numeric final `LIMIT` for a bounded
+table query. Every version/scope variant must end with that exact limit. If the
+query returns the declared maximum, collection remains technically successful
+but receives a `declared_result_limit_reached` diagnostic with
+`coverage_incomplete=true`; report completeness is therefore `partial` rather
+than silently treating a top-N sample as exhaustive.
+
 Cluster variants use only the `{{cluster}}` placeholder. The adapter resolves
 the requested name through `system.clusters`, quotes it as a ClickHouse string
 and substitutes it before execution. Do not introduce other template syntax or
 interpolate object/user input into SQL.
 
+Public content loads always recompute and verify the integrity baseline before
+admitting files. Parsed packs are cached by the verified revision and callers
+receive independent deep copies, so mutation by planning or tests cannot leak
+into a later collection.
+
 `requires.tables` and `requires.columns` describe version/edition capabilities.
 A missing declared capability becomes `unsupported`. Unexpected SQL syntax or
 a missing identifier which was not declared as a capability remains an error so
 a broken check cannot be hidden as compatibility behavior.
+Declared optional sources also classify missing ClickHouse functions as
+`unsupported`; the same exception remains an error for non-optional sources.
 
 SQL files must contain one `SELECT`, `WITH`, `SHOW` or `EXPLAIN` statement.
 Mutating statements, multiple statements and output-file constructs are
 rejected during validation. Runtime execution additionally applies
-`readonly=2`, time, row and byte limits.
+`readonly=2`, time, result row/byte limits and hard source-read limits. The
+default source budgets are 10,000,000 rows and 1 GiB per query. Exceeding a
+source budget is an explicit incomplete item error, never an empty clean result.
 
 Metric input queries are catalog entries too, but do not have visible query
 items. Their `collection_scope` is `every_snapshot` or `window_end`, and the
@@ -148,6 +205,11 @@ Supported output conventions are `plain_text` and `table_json`. Table JSON must
 be a JSON object or array that the generic executor can normalize into column
 descriptors and rows. Scripts must be POSIX `/bin/sh`, bounded, non-mutating and
 self-contained after any declared `library` is prepended.
+
+Strict JSON parsing always runs first. Only source IDs beginning with
+`os.lshw_` may use the narrow compatibility repair for malformed filtered JSON
+from `lshw 02.18.x` (orphan parent terminator, one missing object terminator, or
+the empty `]` output). Arbitrary invalid JSON is never repaired.
 
 A table script may declare `result_contract.columns` overrides. Dynamic
 `unit_ref` and `quantity_ref` columns carry row-level presentation metadata and
@@ -190,6 +252,7 @@ metrics:
     - name: queries
       value_ref: queries
       transform: rate
+      epoch_refs: [server_start_epoch]
       unit: queries/s
     chart:
       kind: line
@@ -209,15 +272,29 @@ deltas use actual elapsed time between successful samples. The independent
 `iostat` source uses whole-second interval reports and discards its first
 cumulative-since-boot report. Counter resets and invalid or missing keys create
 gaps/diagnostics instead of negative values or fabricated zeroes.
+For `rate`, `delta` and `ratio_of_deltas`, optional `epoch_refs` identify a
+server/process generation. Any epoch change creates a gap even when the new
+counter happens to exceed the previous generation's value.
+
+ClickHouse transport disconnects are retried only according to the bounded
+`runtime_policy.database_reconnect_attempts` policy. Query timeout, permission,
+semantic and limit failures are not retried. Before repeating a query, the
+adapter verifies the database, server version and ClickHouse hostname; a
+changed identity aborts that observation rather than mixing samples. Database
+and SSH cleanup remain independent if either close operation fails.
 
 The `linux_os` provider exposes procfs CPU, memory and network samples, an
 independent `iostat` disk stream, plus the ClickHouse server process selected by
 the connected native port and its `/proc/PID/task` thread CPU/I/O counters.
 Thread-name aggregation identifies ClickHouse pools without pretending that
-shared process RSS belongs to an individual thread. Provider implementation is
-generic runtime code; the commands and public output IDs are declared here. A
-disk sampler failure is isolated from the procfs outputs. `remote-db-only`
-excludes sampler-backed metrics, while SQL metrics remain available.
+shared process RSS belongs to an individual thread. The provider discovers and
+ranks TIDs once, retains the busiest-at-discovery bounded selection declared by
+`config.max_process_threads`, and reuses those TIDs throughout the window.
+Discovered, selected, captured and I/O-readable counts produce explicit coverage
+diagnostics. Provider implementation is generic runtime code; the commands and
+public output IDs are declared here. A disk sampler failure is isolated from the
+procfs outputs. `remote-db-only` excludes sampler-backed metrics, while SQL
+metrics remain available.
 
 ## Instructions and metadata
 

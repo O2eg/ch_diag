@@ -15,10 +15,14 @@ from uuid import uuid4
 
 from .artifact_schema import column_descriptor
 from .database_adapter import DatabaseTarget
-from .errors import ClickHouseConnectionError
+from .errors import ClickHouseConnectionError, ClickHouseIdentityChangedError
 from .runtime_config import (
     DEFAULT_DATABASE_CLOSE_TIMEOUT_SECONDS,
+    DEFAULT_DATABASE_RECONNECT_ATTEMPTS,
+    DEFAULT_DATABASE_RECONNECT_DELAY_SECONDS,
     DEFAULT_DATABASE_WORKERS,
+    DEFAULT_MAX_QUERY_BYTES_READ,
+    DEFAULT_MAX_QUERY_ROWS_READ,
     DEFAULT_MAX_RESULT_BYTES,
     DEFAULT_MAX_RESULT_ROWS,
     DEFAULT_SQL_TIMEOUT_SECONDS,
@@ -30,6 +34,10 @@ from .versioning import ClickHouseVersion
 TargetContext = DatabaseTarget
 _SECRET_RE = re.compile(
     r"(?i)(password|passwd|secret|token|private[_ -]?key)(\s*[=:]\s*)([^\s,;]+)"
+)
+_IDENTITY_SQL = (
+    "SELECT version() AS server_version, currentDatabase() AS current_database, "
+    "hostName() AS server_hostname"
 )
 
 
@@ -74,18 +82,32 @@ class ClickHouseAdapter:
         sql_timeout_seconds: float = DEFAULT_SQL_TIMEOUT_SECONDS,
         max_result_rows: int = DEFAULT_MAX_RESULT_ROWS,
         max_result_bytes: int = DEFAULT_MAX_RESULT_BYTES,
+        max_query_rows_read: int = DEFAULT_MAX_QUERY_ROWS_READ,
+        max_query_bytes_read: int = DEFAULT_MAX_QUERY_BYTES_READ,
         worker_count: int = DEFAULT_DATABASE_WORKERS,
         close_timeout_seconds: float = DEFAULT_DATABASE_CLOSE_TIMEOUT_SECONDS,
+        reconnect_attempts: int = DEFAULT_DATABASE_RECONNECT_ATTEMPTS,
+        reconnect_delay_seconds: float = DEFAULT_DATABASE_RECONNECT_DELAY_SECONDS,
     ) -> None:
         self.config = config
         self.sql_timeout_seconds = float(sql_timeout_seconds)
         self.max_result_rows = int(max_result_rows)
         self.max_result_bytes = int(max_result_bytes)
+        self.max_query_rows_read = int(max_query_rows_read)
+        self.max_query_bytes_read = int(max_query_bytes_read)
+        if self.max_query_rows_read < 1 or self.max_query_bytes_read < 1:
+            raise ValueError("ClickHouse query read limits must be positive")
         if int(worker_count) < 1:
             raise ValueError("ClickHouse worker_count must be at least 1")
         self.worker_count = int(worker_count)
         self.close_timeout_seconds = float(close_timeout_seconds)
+        self.reconnect_attempts = int(reconnect_attempts)
+        self.reconnect_delay_seconds = float(reconnect_delay_seconds)
+        if self.reconnect_attempts < 0 or self.reconnect_delay_seconds < 0:
+            raise ValueError("ClickHouse reconnect policy must be non-negative")
         self._capability_cache: dict[tuple[str, str], bool] = {}
+        self._identity: dict[str, Any] | None = None
+        self._identity_lock = asyncio.Lock()
         self._executor = ThreadPoolExecutor(
             max_workers=self.worker_count,
             thread_name_prefix="ch_diag_clickhouse",
@@ -122,10 +144,21 @@ class ClickHouseAdapter:
             "max_result_rows": self.max_result_rows,
             "max_result_bytes": self.max_result_bytes,
             "result_overflow_mode": "throw",
+            "max_rows_to_read": self.max_query_rows_read,
+            "max_bytes_to_read": self.max_query_bytes_read,
+            "read_overflow_mode": "throw",
             "skip_unavailable_shards": 0,
         }
 
     async def detect_runtime_context(self) -> dict[str, Any]:
+        context = await self._read_runtime_context()
+        if self._identity is None:
+            self._identity = _database_identity(context)
+        else:
+            _verify_database_identity(self._identity, context)
+        return context
+
+    async def _read_runtime_context(self) -> dict[str, Any]:
         query = (
             "SELECT version() AS server_version, currentDatabase() AS current_database, "
             "currentUser() AS current_user, hostName() AS server_hostname"
@@ -157,6 +190,14 @@ class ClickHouseAdapter:
             "database_port": self.config.port,
             "read_only": readonly,
         }
+
+    async def _verify_reconnect_identity(self) -> None:
+        async with self._identity_lock:
+            actual = await self._read_runtime_context()
+            if self._identity is None:
+                self._identity = _database_identity(actual)
+                return
+            _verify_database_identity(self._identity, actual)
 
     async def list_clusters(self) -> list[dict[str, Any]]:
         query = (
@@ -248,20 +289,33 @@ class ClickHouseAdapter:
         rendered = render_target_sql(sql, target)
         started = time_module.perf_counter()
         try:
-            rows, columns = await self._execute_raw(rendered, timeout_seconds=timeout_seconds)
+            rows, columns = await self._execute_with_reconnect(
+                rendered,
+                timeout_seconds=timeout_seconds,
+            )
         except Exception as exc:
+            limit_code = _query_limit_code(exc)
+            normalized_kind, evidence = failure_kind(
+                exc,
+                optional_capability=optional_capability,
+            )
+            diagnostic = {
+                "level": "error",
+                "code": limit_code or type(exc).__name__,
+                "message": redact_error(exc),
+            }
+            if normalized_kind is not None:
+                diagnostic["failure_kind"] = normalized_kind
+                diagnostic["failure_kind_evidence"] = evidence
+            if limit_code:
+                diagnostic["coverage_incomplete"] = True
+                diagnostic["exception_type"] = type(exc).__name__
             return {
                 "collection_status": classify_error(exc, optional_capability=optional_capability),
                 "reason": redact_error(exc),
                 "timing_ms": round((time_module.perf_counter() - started) * 1000, 3),
                 "result": {"kind": "table", "columns": [], "rows": [], "row_count": 0},
-                "diagnostics": [
-                    {
-                        "level": "error",
-                        "code": type(exc).__name__,
-                        "message": redact_error(exc),
-                    }
-                ],
+                "diagnostics": [diagnostic],
                 "source_text": rendered,
             }
         public_columns = [column_descriptor(name, ch_type, rows, index) for index, (name, ch_type) in enumerate(columns)]
@@ -282,7 +336,16 @@ class ClickHouseAdapter:
                 "reason": reason,
                 "timing_ms": round((time_module.perf_counter() - started) * 1000, 3),
                 "result": {"kind": "table", "columns": public_columns, "rows": [], "row_count": 0},
-                "diagnostics": [{"level": "error", "code": "result_size_limit", "message": reason}],
+                "diagnostics": [
+                    {
+                        "level": "error",
+                        "code": "result_size_limit",
+                        "failure_kind": "result_limit",
+                        "failure_kind_evidence": "collector_limit",
+                        "coverage_incomplete": True,
+                        "message": reason,
+                    }
+                ],
                 "source_text": rendered,
             }
         return {
@@ -298,6 +361,33 @@ class ClickHouseAdapter:
             "diagnostics": [],
             "source_text": rendered,
         }
+
+    async def _execute_with_reconnect(
+        self,
+        sql: str,
+        *,
+        timeout_seconds: float | None,
+    ) -> tuple[list[tuple[Any, ...]], list[tuple[str, str]]]:
+        try:
+            return await self._execute_raw(sql, timeout_seconds=timeout_seconds)
+        except Exception as exc:
+            if failure_kind(exc)[0] != "transport_disconnect" or not self.reconnect_attempts:
+                raise
+            last_error: BaseException = exc
+
+        for _attempt in range(self.reconnect_attempts):
+            if self.reconnect_delay_seconds:
+                await asyncio.sleep(self.reconnect_delay_seconds)
+            try:
+                await self._verify_reconnect_identity()
+                return await self._execute_raw(sql, timeout_seconds=timeout_seconds)
+            except ClickHouseIdentityChangedError:
+                raise
+            except Exception as exc:
+                if failure_kind(exc)[0] != "transport_disconnect":
+                    raise
+                last_error = exc
+        raise last_error
 
     async def _execute_raw(
         self,
@@ -321,6 +411,18 @@ class ClickHouseAdapter:
 
         def execute() -> tuple[list[tuple[Any, ...]], list[tuple[str, str]]]:
             try:
+                expected_identity = self._identity
+                if expected_identity is not None:
+                    identity_rows, identity_columns = client.execute(
+                        _IDENTITY_SQL,
+                        with_column_types=True,
+                        query_id=query_id + "_identity",
+                        settings=self._settings(timeout),
+                    )
+                    _verify_database_identity(
+                        expected_identity,
+                        _identity_context(identity_rows, identity_columns),
+                    )
                 rows, columns = client.execute(
                     sql,
                     with_column_types=True,
@@ -432,7 +534,25 @@ def create_clickhouse_adapter(
         sql_timeout_seconds=float(runtime_policy.get("default_sql_timeout_seconds", 5.0)),
         max_result_rows=int(runtime_policy.get("max_result_rows", DEFAULT_MAX_RESULT_ROWS)),
         max_result_bytes=int(runtime_policy.get("max_result_bytes", DEFAULT_MAX_RESULT_BYTES)),
+        max_query_rows_read=int(
+            runtime_policy.get("max_query_rows_read", DEFAULT_MAX_QUERY_ROWS_READ)
+        ),
+        max_query_bytes_read=int(
+            runtime_policy.get("max_query_bytes_read", DEFAULT_MAX_QUERY_BYTES_READ)
+        ),
         worker_count=int(runtime_policy.get("database_workers", DEFAULT_DATABASE_WORKERS)),
+        reconnect_attempts=int(
+            runtime_policy.get(
+                "database_reconnect_attempts",
+                DEFAULT_DATABASE_RECONNECT_ATTEMPTS,
+            )
+        ),
+        reconnect_delay_seconds=float(
+            runtime_policy.get(
+                "database_reconnect_delay_seconds",
+                DEFAULT_DATABASE_RECONNECT_DELAY_SECONDS,
+            )
+        ),
     )
 
 
@@ -442,22 +562,133 @@ def redact_error(exc: BaseException) -> str:
     return _SECRET_RE.sub(lambda match: match.group(1) + match.group(2) + "<redacted>", text)[:4000]
 
 
-def classify_error(exc: BaseException, *, optional_capability: bool = False) -> str:
-    if isinstance(exc, TimeoutError):
-        return "timeout"
+def _query_limit_code(exc: BaseException) -> str | None:
     text = str(exc).casefold()
-    if any(token in text for token in ("not enough privileges", "access denied", "permission denied")):
-        return "permission_denied"
-    if optional_capability and any(
-        token in text
-        for token in (
-            "doesn't exist",
-            "unknown table",
-            "unknown identifier",
-            "no zookeeper configuration",
-            "there is no keeper configuration",
-            "no hosts passed to zookeeper constructor",
+    code = getattr(exc, "code", None)
+    if any(
+        marker in text
+        for marker in (
+            "max_rows_to_read",
+            "max_bytes_to_read",
+            "limit for rows to read exceeded",
+            "limit for bytes to read exceeded",
         )
     ):
+        return "query_read_limit_exceeded"
+    if any(marker in text for marker in ("max_result_rows", "max_result_bytes")):
+        return "query_result_limit_exceeded"
+    return "query_limit_exceeded" if code == 158 else None
+
+
+def failure_kind(
+    exc: BaseException,
+    *,
+    optional_capability: bool = False,
+) -> tuple[str | None, str | None]:
+    """Normalize ClickHouse/driver failures for retry and fallback policies."""
+
+    if isinstance(exc, TimeoutError):
+        return "query_timeout", "exception_type"
+    if isinstance(exc, (ConnectionError, EOFError, BrokenPipeError)):
+        return "transport_disconnect", "exception_type"
+    text = str(exc).casefold()
+    type_name = type(exc).__name__.casefold()
+    code = getattr(exc, "code", None)
+    if code == 159 or type_name == "sockettimeouterror" or any(
+        token in text
+        for token in ("timeout exceeded", "max_execution_time exceeded", "query timed out")
+    ):
+        evidence = "server_code" if code == 159 else (
+            "exception_type" if type_name == "sockettimeouterror" else "server_message"
+        )
+        return "query_timeout", evidence
+    limit_code = _query_limit_code(exc)
+    if limit_code:
+        kind = "result_limit" if "result" in limit_code else "read_limit"
+        return kind, "server_code" if code is not None else "server_message"
+    if any(token in text for token in ("query was cancelled", "query was canceled")) or code == 394:
+        return "query_canceled", "server_code" if code == 394 else "server_message"
+    if any(token in text for token in ("not enough privileges", "access denied", "permission denied")):
+        return "permission_denied", "server_message"
+    optional_tokens = (
+        "doesn't exist",
+        "does not exist",
+        "unknown table",
+        "unknown identifier",
+        "unknown function",
+        "no zookeeper configuration",
+        "there is no keeper configuration",
+        "no hosts passed to zookeeper constructor",
+    )
+    if optional_capability and (
+        code in {46, 47, 60} or any(token in text for token in optional_tokens)
+    ):
+        return (
+            "unsupported_capability",
+            "server_code" if code in {46, 47, 60} else "server_message",
+        )
+    disconnect_types = {"networkerror", "connectionerror"}
+    disconnect_tokens = (
+        "connection reset",
+        "connection closed",
+        "connection was closed",
+        "connection lost",
+        "broken pipe",
+        "unexpected eof",
+        "network is unreachable",
+        "connection refused",
+    )
+    if type_name in disconnect_types or any(token in text for token in disconnect_tokens):
+        evidence = "exception_type" if type_name in disconnect_types else "server_message"
+        return "transport_disconnect", evidence
+    return None, None
+
+
+def classify_error(exc: BaseException, *, optional_capability: bool = False) -> str:
+    kind, _evidence = failure_kind(exc, optional_capability=optional_capability)
+    if kind == "query_timeout":
+        return "timeout"
+    if kind == "permission_denied":
+        return "permission_denied"
+    if kind == "unsupported_capability":
         return "unsupported"
     return "error"
+
+
+def _database_identity(context: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: context.get(key)
+        for key in ("current_database", "server_version", "database_hostname")
+    }
+
+
+def _identity_context(
+    rows: list[tuple[Any, ...]],
+    columns: list[tuple[str, str]],
+) -> dict[str, Any]:
+    if not rows:
+        raise ClickHouseConnectionError("ClickHouse identity query returned no rows")
+    values = dict(zip((name for name, _type in columns), rows[0]))
+    return {
+        "current_database": json_safe(values.get("current_database")),
+        "server_version": str(values.get("server_version") or ""),
+        "database_hostname": json_safe(values.get("server_hostname")),
+    }
+
+
+def _verify_database_identity(expected: dict[str, Any], actual: dict[str, Any]) -> None:
+    labels = {
+        "current_database": "database",
+        "server_version": "server version",
+        "database_hostname": "server hostname",
+    }
+    changed = [
+        f"{labels[key]} changed from {expected.get(key)!r} to {actual.get(key)!r}"
+        for key in labels
+        if expected.get(key) != actual.get(key)
+    ]
+    if changed:
+        raise ClickHouseIdentityChangedError(
+            "ClickHouse identity changed after reconnect; refusing to merge samples: "
+            + "; ".join(changed)
+        )

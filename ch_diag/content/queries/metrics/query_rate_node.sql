@@ -1,5 +1,6 @@
 SELECT
     hostName() AS host,
+    toUInt32(now()) - uptime() AS server_start_epoch,
     sumIf(value, event = 'Query') AS queries,
     sumIf(value, event = 'SelectQuery') AS selects,
     sumIf(value, event = 'InsertQuery') AS inserts,

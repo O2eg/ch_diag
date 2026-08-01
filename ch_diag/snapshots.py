@@ -123,11 +123,19 @@ def _record_source_error(
     level: str,
     code: str,
     message: str,
+    coverage_incomplete: bool = False,
+    failure_kind: str | None = None,
+    failure_kind_evidence: str | None = None,
 ) -> None:
     for source_id in source_ids:
-        source_errors[source_id].append(
-            {"level": level, "code": code, "message": message[:1000]}
-        )
+        diagnostic = {"level": level, "code": code, "message": message[:1000]}
+        if coverage_incomplete:
+            diagnostic["coverage_incomplete"] = True
+        if failure_kind:
+            diagnostic["failure_kind"] = failure_kind
+        if failure_kind_evidence:
+            diagnostic["failure_kind_evidence"] = failure_kind_evidence
+        source_errors[source_id].append(diagnostic)
 
 
 async def _run_scheduled_source(
@@ -211,7 +219,7 @@ async def _collect_snapshot_markers(
 
 async def collect_metric_items(
     content: ContentPack,
-    adapter: DatabaseAdapter,
+    adapter: DatabaseAdapter | None,
     target: DatabaseTarget,
     planned_items: list[PlannedItem],
     host_runner: HostRunner | None,
@@ -231,10 +239,18 @@ async def collect_metric_items(
         for metric in metrics.values()
         if metric.get("source_query")
     }
-    version = ClickHouseVersion.parse((await adapter.detect_runtime_context())["server_version"])
+    version: ClickHouseVersion | None = None
+    if required_queries:
+        if adapter is None:
+            raise RuntimeError("database adapter is unavailable for SQL metric sources")
+        raw_version = runtime_context.get("server_version")
+        if not raw_version:
+            raw_version = (await adapter.detect_runtime_context())["server_version"]
+        version = ClickHouseVersion.parse(str(raw_version))
     query_sources: dict[str, tuple[str, float]] = {}
     unsupported_sources: dict[str, str] = {}
     for query_id in sorted(required_queries):
+        assert version is not None
         manifest = content.queries[query_id]
         supported, unsupported_reason = await adapter.supports_requirements(
             manifest.get("requires")
@@ -270,6 +286,7 @@ async def collect_metric_items(
     proc_script: str | None = None
     iostat_script: str | None = None
     process_script: str | None = None
+    max_process_threads = 0
     linux_samplers = {source_id for source_id in required_samplers if source_id.startswith("os.")}
     disk_samplers = linux_samplers & {"os.disk"}
     proc_samplers = linux_samplers - disk_samplers
@@ -300,6 +317,9 @@ async def collect_metric_items(
                 runtime_context,
             ) if disk_samplers else None
             if process_samplers:
+                max_process_threads = int(provider_config.get("max_process_threads") or 2000)
+                if max_process_threads < 1:
+                    raise ValueError("ClickHouse process thread limit must be positive")
                 process_manifest = {
                     "file": provider_config.get("process_script") or "samplers/clickhouse_process.sh",
                     "library": provider_config.get("process_library") or "lib/clickhouse_process.sh",
@@ -395,13 +415,89 @@ async def collect_metric_items(
     if process_script is not None and host_runner is not None:
         previous_process: dict[str, Any] | None = None
         previous_process_mono: float | None = None
+        selected_thread_ids: tuple[int, ...] | None = None
+        selected_process_pid: int | None = None
+        discovered_thread_count = 0
+        thread_limit_reported = False
+        thread_capture_reported = False
+        thread_io_reported = False
+        thread_sampler_ids = process_samplers & {
+            "clickhouse.threads",
+            "clickhouse.thread_pools",
+        }
 
         async def collect_process_once(sample_index: int, offset: float) -> None:
             nonlocal previous_process, previous_process_mono
-            command = await host_runner.run_script(process_script, timeout=shell_timeout)
+            nonlocal selected_thread_ids, selected_process_pid, discovered_thread_count
+            nonlocal thread_limit_reported, thread_capture_reported, thread_io_reported
+            if not thread_sampler_ids:
+                arguments = "set -- process 1"
+            elif selected_thread_ids is None:
+                arguments = f"set -- discover {max_process_threads}"
+            else:
+                selected = ",".join(str(value) for value in selected_thread_ids)
+                arguments = (
+                    f"set -- selected {max_process_threads} {selected} "
+                    f"{discovered_thread_count}"
+                )
+            command = await host_runner.run_script(
+                arguments + "\n" + process_script,
+                timeout=shell_timeout,
+            )
             if command.returncode != 0:
                 raise RuntimeError(command.stderr.strip() or f"exit code {command.returncode}")
             current_process = parse_clickhouse_process(command.stdout)
+            coverage = current_process["thread_coverage"]
+            if thread_sampler_ids and selected_thread_ids is None:
+                selected_thread_ids = tuple(current_process["threads"]) or None
+                selected_process_pid = int(current_process["pid"])
+                discovered_thread_count = int(coverage["discovered_thread_count"])
+            elif selected_process_pid != int(current_process["pid"]):
+                selected_thread_ids = None
+                selected_process_pid = None
+                discovered_thread_count = 0
+            if coverage["selection_truncated"] and not thread_limit_reported:
+                _record_source_error(
+                    source_errors,
+                    thread_sampler_ids,
+                    level="warning",
+                    code="process_thread_limit",
+                    message=(
+                        "ClickHouse thread sampling was limited to "
+                        f"{coverage['selected_thread_count']} of "
+                        f"{coverage['discovered_thread_count']} discovered threads"
+                    ),
+                    coverage_incomplete=True,
+                )
+                thread_limit_reported = True
+            if coverage["capture_incomplete"] and not thread_capture_reported:
+                _record_source_error(
+                    source_errors,
+                    thread_sampler_ids,
+                    level="warning",
+                    code="process_thread_capture_incomplete",
+                    message=(
+                        "ClickHouse thread sampling captured "
+                        f"{coverage['captured_thread_count']} of "
+                        f"{coverage['selected_thread_count']} selected threads; "
+                        "threads may have exited or procfs access may be incomplete"
+                    ),
+                    coverage_incomplete=True,
+                )
+                thread_capture_reported = True
+            if coverage["io_capture_incomplete"] and not thread_io_reported:
+                _record_source_error(
+                    source_errors,
+                    thread_sampler_ids,
+                    level="warning",
+                    code="process_thread_io_incomplete",
+                    message=(
+                        "ClickHouse thread I/O was readable for "
+                        f"{coverage['io_captured_thread_count']} of "
+                        f"{coverage['captured_thread_count']} captured threads"
+                    ),
+                )
+                thread_io_reported = True
             metadata = _sample_metadata(
                 started_monotonic=started,
                 scheduled_offset=offset,
@@ -429,9 +525,10 @@ async def collect_metric_items(
                 "clickhouse.thread_pools": clickhouse_thread_pool_rows(thread_rows),
             }
             for source_id in process_samplers:
-                sampler_samples[source_id].append(
-                    {**metadata, "rows": rows_by_source[source_id]}
-                )
+                sample = {**metadata, "rows": rows_by_source[source_id]}
+                if source_id in thread_sampler_ids:
+                    sample["coverage"] = dict(coverage)
+                sampler_samples[source_id].append(sample)
             previous_process = current_process
             previous_process_mono = sampled_mono
 
@@ -477,6 +574,7 @@ async def collect_metric_items(
             query_id: str = source_id,
             query_source: tuple[str, float] = source,
         ) -> None:
+            assert adapter is not None
             async with sql_semaphore:
                 execution = await adapter.execute_query(
                     query_source[0],
@@ -491,13 +589,48 @@ async def collect_metric_items(
             )
             status = str(execution["collection_status"])
             if status not in {"ok", "empty"}:
-                _record_source_error(
-                    source_errors,
-                    {query_id},
-                    level="error" if status in {"error", "timeout"} else "warning",
-                    code=status,
-                    message=str(execution.get("reason") or status),
-                )
+                execution_diagnostics = [
+                    diagnostic
+                    for diagnostic in execution.get("diagnostics") or []
+                    if isinstance(diagnostic, dict)
+                ]
+                if execution_diagnostics:
+                    for diagnostic in execution_diagnostics:
+                        _record_source_error(
+                            source_errors,
+                            {query_id},
+                            level=str(
+                                diagnostic.get("level")
+                                or ("error" if status in {"error", "timeout"} else "warning")
+                            ),
+                            code=str(diagnostic.get("code") or status),
+                            message=str(
+                                diagnostic.get("message")
+                                or execution.get("reason")
+                                or status
+                            ),
+                            coverage_incomplete=(
+                                diagnostic.get("coverage_incomplete") is True
+                            ),
+                            failure_kind=(
+                                str(diagnostic["failure_kind"])
+                                if diagnostic.get("failure_kind")
+                                else None
+                            ),
+                            failure_kind_evidence=(
+                                str(diagnostic["failure_kind_evidence"])
+                                if diagnostic.get("failure_kind_evidence")
+                                else None
+                            ),
+                        )
+                else:
+                    _record_source_error(
+                        source_errors,
+                        {query_id},
+                        level="error" if status in {"error", "timeout"} else "warning",
+                        code=status,
+                        message=str(execution.get("reason") or status),
+                    )
                 return
             result = execution["result"]
             columns = [str(column["name"]) for column in result.get("columns") or []]
@@ -564,6 +697,22 @@ async def collect_metric_items(
             if result_kind == "table"
             else build_chart_result(metric, samples)
         )
+        if source_id in {"clickhouse.threads", "clickhouse.thread_pools"}:
+            coverage_samples = [
+                {
+                    "sample_index": sample.get("sample_index"),
+                    **sample["coverage"],
+                }
+                for sample in samples
+                if isinstance(sample.get("coverage"), dict)
+            ]
+            if coverage_samples:
+                result["coverage"] = {"samples": coverage_samples}
+                result["coverage_incomplete"] = any(
+                    coverage.get("selection_truncated")
+                    or coverage.get("capture_incomplete")
+                    for coverage in coverage_samples
+                )
         errors = source_errors.get(source_id) or []
         coverage_diagnostics = chart_coverage_diagnostics(result) if result_kind == "chart" else []
         budget_diagnostics = (

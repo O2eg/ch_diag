@@ -24,9 +24,13 @@ report:
 runtime_policy:
   default_sql_timeout_seconds: 5
   database_workers: 4
+  database_reconnect_attempts: 1
+  database_reconnect_delay_seconds: 0.1
   default_shell_timeout_seconds: 2
   max_result_rows: 10000
   max_result_bytes: 67108864
+  max_query_rows_read: 10000000
+  max_query_bytes_read: 1073741824
   max_artifact_bytes: 134217728
   max_snapshot_count: 360
   max_cluster_targets: 32
@@ -34,6 +38,35 @@ runtime_policy:
   max_points_per_series: 2000
   max_total_chart_points: 200000
   fail_fast: false
+fallback_items:
+  fallback.query_workload.queries_top_long:
+    title: Top individual long queries
+    query: diagnostics.queries.queries_top_long
+    instruction: instructions/fallback_items/query_workload/queries_top_long.md
+  fallback.query_workload.queries_top_result_bytes:
+    title: Top individual queries by result bytes
+    query: diagnostics.queries.queries_top_result_bytes
+    instruction: instructions/fallback_items/query_workload/queries_top_result_bytes.md
+  fallback.query_workload.queries_top_mem:
+    title: Top individual queries by memory
+    query: diagnostics.queries.queries_top_mem
+    instruction: instructions/fallback_items/query_workload/queries_top_mem.md
+  fallback.query_workload.queries_top_long_agg:
+    title: Top long queries without ProfileEvents expansion
+    query: diagnostics.queries.queries_top_long_agg
+    instruction: instructions/fallback_items/query_workload/queries_top_long_agg.md
+  fallback.dba_troubleshooting.db_parts_stat:
+    title: Bounded data-part statistics
+    query: diagnostics.db.db_parts_stat
+    instruction: instructions/fallback_items/dba_troubleshooting/db_parts_stat.md
+  fallback.dba_troubleshooting.queries_top_mem_agg:
+    title: Query memory aggregates without CPU event expansion
+    query: diagnostics.queries.queries_top_mem_agg
+    instruction: instructions/fallback_items/dba_troubleshooting/queries_top_mem_agg.md
+  fallback.dba_troubleshooting.queries_top_long:
+    title: Bounded individual long queries
+    query: diagnostics.queries.queries_top_long
+    instruction: instructions/fallback_items/dba_troubleshooting/queries_top_long.md
 defaults:
   numeric_locale: en-US
   table:
@@ -454,6 +487,8 @@ sections:
         query: diagnostics.queries.queries_top_long_agg
         tags: *id007
         state: expanded
+        fallback_item: fallback.query_workload.queries_top_long
+        fallback_on: [query_timeout, read_limit, result_limit, query_canceled]
       queries_top_result_bytes:
         query: diagnostics.queries.queries_top_result_bytes
         tags: *id007
@@ -462,6 +497,8 @@ sections:
         query: diagnostics.queries.queries_top_result_bytes_agg
         tags: *id007
         state: collapsed
+        fallback_item: fallback.query_workload.queries_top_result_bytes
+        fallback_on: [query_timeout, read_limit, result_limit, query_canceled]
       queries_top_mem:
         query: diagnostics.queries.queries_top_mem
         tags: *id007
@@ -470,10 +507,14 @@ sections:
         query: diagnostics.queries.queries_top_mem_agg
         tags: *id007
         state: collapsed
+        fallback_item: fallback.query_workload.queries_top_mem
+        fallback_on: [query_timeout, read_limit, result_limit, query_canceled]
       queries_top_long_profile_events_agg:
         query: diagnostics.queries.queries_top_long_profile_events_agg
         tags: *id007
         state: collapsed
+        fallback_item: fallback.query_workload.queries_top_long_agg
+        fallback_on: [query_timeout, unsupported_capability, read_limit, result_limit, query_canceled]
   dba_troubleshooting:
     title: DBA Troubleshooting
     description: Bounded diagnostics adapted from official ClickHouse troubleshooting guidance.
@@ -487,14 +528,20 @@ sections:
         query: troubleshooting.storage_breakdown
         tags: [Tables, Storage, Disk]
         state: expanded
+        fallback_item: fallback.dba_troubleshooting.db_parts_stat
+        fallback_on: [query_timeout, read_limit, result_limit, query_canceled]
       top_cpu_memory:
         query: troubleshooting.top_cpu_memory
         tags: [Queries, CPU, Memory]
         state: expanded
+        fallback_item: fallback.dba_troubleshooting.queries_top_mem_agg
+        fallback_on: [query_timeout, unsupported_capability, read_limit, result_limit, query_canceled]
       frequent_queries:
         query: troubleshooting.frequent_queries
         tags: [Queries, Activity]
         state: expanded
+        fallback_item: fallback.dba_troubleshooting.queries_top_long
+        fallback_on: [query_timeout, unsupported_capability, read_limit, result_limit, query_canceled]
       part_log_errors:
         query: troubleshooting.part_log_errors
         tags: [Errors, Tables]

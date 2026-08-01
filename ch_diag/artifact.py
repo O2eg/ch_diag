@@ -31,6 +31,8 @@ COLLECTION_STATUSES = {
     "timeout",
     "skipped",
 }
+FAILED_COLLECTION_STATUSES = {"error", "permission_denied", "timeout"}
+SUCCESSFUL_COLLECTION_STATUSES = {"ok", "empty"}
 
 
 def utc_now() -> str:
@@ -137,15 +139,85 @@ def item_from_plan(
     }
 
 
+def finalize_collection_summary(artifact: dict[str, Any]) -> None:
+    """Record report-level completeness without changing item status contracts."""
+
+    items = artifact.get("items") or {}
+    coverage_by_item = {
+        item_id: _item_coverage_incomplete(item)
+        for item_id, item in items.items()
+    }
+    successful = sum(
+        str(item.get("collection_status")) in SUCCESSFUL_COLLECTION_STATUSES
+        for item in items.values()
+    )
+    failed = sum(
+        str(item.get("collection_status")) in FAILED_COLLECTION_STATUSES
+        for item in items.values()
+    )
+    coverage_incomplete = sum(coverage_by_item.values())
+    complete = sum(
+        str(item.get("collection_status")) in SUCCESSFUL_COLLECTION_STATUSES
+        and not coverage_by_item[item_id]
+        for item_id, item in items.items()
+    )
+    total = len(items)
+    fallback_items = sum(
+        bool(((item.get("source_metadata") or {}).get("fallback") or {}).get("used"))
+        for item in items.values()
+    )
+    if failed and successful == 0:
+        completion_status = "failed"
+    elif failed or coverage_incomplete:
+        completion_status = "partial"
+    else:
+        completion_status = "succeeded"
+    artifact["runtime"]["completion_status"] = completion_status
+    artifact["runtime"]["collection_summary"] = {
+        "total_items": total,
+        "successful_items": successful,
+        "complete_items": complete,
+        "failed_items": failed,
+        "coverage_incomplete_items": coverage_incomplete,
+        "completeness_ratio": round(complete / total, 6) if total else 1.0,
+    }
+    if fallback_items:
+        artifact["runtime"]["collection_summary"]["fallback_items"] = fallback_items
+        artifact["runtime"]["degraded"] = True
+
+
+def _item_coverage_incomplete(item: dict[str, Any]) -> bool:
+    result = item.get("result") or {}
+    if result.get("coverage_incomplete") is True:
+        return True
+    return any(
+        isinstance(diagnostic, dict)
+        and diagnostic.get("coverage_incomplete") is True
+        for diagnostic in item.get("diagnostics") or []
+    )
+
+
 def strip_artifact_metadata(artifact: dict[str, Any]) -> dict[str, Any]:
     artifact["runtime"]["strip_meta"] = True
     for item in artifact.get("items", {}).values():
         metadata = item.get("source_metadata") or {}
-        item["source_metadata"] = {
+        retained = {
             key: deepcopy(metadata[key])
-            for key in ("tags", "execution_scope", "chart", "render", "display")
+            for key in (
+                "tags",
+                "execution_scope",
+                "chart",
+                "render",
+                "display",
+                "fallback",
+            )
             if key in metadata
         }
+        fallback = retained.get("fallback")
+        if isinstance(fallback, dict):
+            fallback.pop("primary_source_text", None)
+            fallback.pop("primary_instructions", None)
+        item["source_metadata"] = retained
     document = artifact["content"]["document"]
     presentation = ((document.get("catalogs") or {}).get("presentation") or {})
     artifact["content"]["document"] = {
@@ -205,6 +277,9 @@ def validate_artifact(artifact: dict[str, Any]) -> None:
     missing = sorted(required - set(artifact))
     if missing:
         raise ChDiagError(f"artifact misses required fields: {missing!r}")
+    completion_status = (artifact.get("runtime") or {}).get("completion_status")
+    if completion_status not in {None, "succeeded", "partial", "failed"}:
+        raise ChDiagError(f"artifact has invalid completion status {completion_status!r}")
     item_ids = set(artifact["items"])
     referenced: set[str] = set()
     for section in artifact["sections"]:

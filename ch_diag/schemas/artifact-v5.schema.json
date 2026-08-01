@@ -39,7 +39,13 @@
         "host_scope": {"enum": ["collector", "ssh_target"]}
       }
     },
-    "runtime": {"type": "object"},
+    "runtime": {
+      "type": "object",
+      "properties": {
+        "completion_status": {"enum": ["succeeded", "partial", "failed"]},
+        "collection_summary": {"$ref": "#/$defs/collection_summary"}
+      }
+    },
     "display": {"type": "object"},
     "sections": {
       "type": "array",
@@ -55,6 +61,21 @@
     "diagnostics": {"type": "array", "items": {"$ref": "#/$defs/diagnostic"}}
   },
   "$defs": {
+    "collection_summary": {
+      "type": "object",
+      "required": [
+        "total_items", "successful_items", "complete_items", "failed_items",
+        "coverage_incomplete_items", "completeness_ratio"
+      ],
+      "properties": {
+        "total_items": {"type": "integer", "minimum": 0},
+        "successful_items": {"type": "integer", "minimum": 0},
+        "complete_items": {"type": "integer", "minimum": 0},
+        "failed_items": {"type": "integer", "minimum": 0},
+        "coverage_incomplete_items": {"type": "integer", "minimum": 0},
+        "completeness_ratio": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
     "section": {
       "type": "object",
       "required": ["section_id", "title", "state", "items"],

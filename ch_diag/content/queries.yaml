@@ -668,6 +668,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 100
     semantic_contract:
       source_tables:
       - system.query_log
@@ -1996,6 +1997,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 30
     semantic_contract:
       source_tables:
       - system.query_log
@@ -2041,6 +2043,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 30
     semantic_contract:
       source_tables:
       - system.query_log
@@ -2097,6 +2100,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 30
     semantic_contract:
       source_tables:
       - system.query_log
@@ -2142,6 +2146,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 30
     semantic_contract:
       source_tables:
       - system.query_log
@@ -2198,6 +2203,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 30
     semantic_contract:
       source_tables:
       - system.query_log
@@ -2243,6 +2249,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 30
     semantic_contract:
       source_tables:
       - system.query_log
@@ -2299,6 +2306,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 30
     semantic_contract:
       source_tables:
       - system.query_log
@@ -2368,6 +2376,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 500
     semantic_contract:
       source_tables:
       - system.query_log
@@ -2395,6 +2404,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 1000
     semantic_contract:
       source_tables:
       - system.columns
@@ -2422,6 +2432,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 1000
     semantic_contract:
       source_tables:
       - system.parts
@@ -2474,6 +2485,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 100
     semantic_contract:
       source_tables:
       - system.query_log
@@ -2516,6 +2528,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 100
     semantic_contract:
       source_tables:
       - system.query_log
@@ -2548,6 +2561,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 200
     semantic_contract:
       source_tables:
       - system.part_log
@@ -2575,6 +2589,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 1000
     semantic_contract:
       source_tables:
       - system.parts
@@ -2602,6 +2617,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 200
     semantic_contract:
       source_tables:
       - system.merges
@@ -2629,6 +2645,7 @@ queries:
       kind: table
       unit_policy: raw
       may_be_empty: true
+      row_limit: 1000
     semantic_contract:
       source_tables:
       - system.replicas

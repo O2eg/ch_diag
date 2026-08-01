@@ -4,7 +4,10 @@ import asyncio
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
-from ch_diag.content_loader import load_content
+import pytest
+
+from ch_diag.content_loader import load_content, validate_content
+from ch_diag.errors import ContentValidationError
 from ch_diag.host import CommandResult
 from ch_diag.linux_helpers import normalize_iostat_row, parse_iostat_reports
 from ch_diag.planner import PlannedItem
@@ -67,6 +70,14 @@ __CH_DIAG_PROCESS_STAT__
 __CH_DIAG_PROCESS_IO__
 read_bytes: 1000
 write_bytes: 2000
+__CH_DIAG_PROCESS_DISCOVERED_THREADS__
+2
+__CH_DIAG_PROCESS_SELECTED_THREADS__
+2
+__CH_DIAG_PROCESS_CAPTURED_THREADS__
+2
+__CH_DIAG_PROCESS_IO_CAPTURED_THREADS__
+1
 __CH_DIAG_PROCESS_THREADS__
 101\tS\t500\t10\t5\tQueryPipelineEx
 102\tS\t600\t20\t0\tBgSchPool
@@ -190,6 +201,43 @@ def test_ratio_of_deltas_builds_interval_average_and_ignores_idle_window() -> No
     ]
 
 
+def test_epoch_change_creates_gap_even_when_counter_increases() -> None:
+    metric = {
+        "series": [
+            {
+                "name": "queries",
+                "value_ref": "value",
+                "transform": "rate",
+                "epoch_refs": ["server_start_time"],
+                "unit": "queries/s",
+            }
+        ],
+        "chart": {"kind": "line", "unit": "queries/s"},
+    }
+    result = build_chart_result(
+        metric,
+        [
+            {"timestamp": "t0", "monotonic": 0.0, "rows": [{"value": 10, "server_start_time": "a"}]},
+            {"timestamp": "t1", "monotonic": 1.0, "rows": [{"value": 20, "server_start_time": "a"}]},
+            {"timestamp": "t2", "monotonic": 2.0, "rows": [{"value": 30, "server_start_time": "b"}]},
+            {"timestamp": "t3", "monotonic": 3.0, "rows": [{"value": 34, "server_start_time": "b"}]},
+        ],
+    )
+    assert [point["value"] for point in result["series"][0]["points"]] == [
+        None,
+        10.0,
+        None,
+        4.0,
+    ]
+
+
+def test_content_rejects_epoch_refs_on_gauge_series() -> None:
+    content = load_content()
+    content.metrics["clickhouse.process_cpu"]["series"][0]["epoch_refs"] = ["pid"]
+    with pytest.raises(ContentValidationError, match="epoch_refs"):
+        validate_content(content)
+
+
 def test_clickhouse_process_sampler_normalizes_cpu_memory_and_io() -> None:
     previous = parse_clickhouse_process(PROCESS_SAMPLE)
     current = parse_clickhouse_process(
@@ -204,6 +252,34 @@ def test_clickhouse_process_sampler_normalizes_cpu_memory_and_io() -> None:
     assert row["rss_bytes"] == 30 * 4096
     assert row["read_bytes_per_sec"] == 1000
     assert row["write_bytes_per_sec"] == 3000
+
+
+def test_clickhouse_process_parser_exposes_bounded_thread_coverage() -> None:
+    sample = (
+        PROCESS_SAMPLE.replace(
+            "__CH_DIAG_PROCESS_DISCOVERED_THREADS__\n2",
+            "__CH_DIAG_PROCESS_DISCOVERED_THREADS__\n3000",
+        )
+        .replace(
+            "__CH_DIAG_PROCESS_SELECTED_THREADS__\n2",
+            "__CH_DIAG_PROCESS_SELECTED_THREADS__\n2000",
+        )
+        .replace(
+            "__CH_DIAG_PROCESS_CAPTURED_THREADS__\n2",
+            "__CH_DIAG_PROCESS_CAPTURED_THREADS__\n1999",
+        )
+    )
+
+    coverage = parse_clickhouse_process(sample)["thread_coverage"]
+    assert coverage == {
+        "discovered_thread_count": 3000,
+        "selected_thread_count": 2000,
+        "captured_thread_count": 1999,
+        "io_captured_thread_count": 1,
+        "selection_truncated": True,
+        "capture_incomplete": True,
+        "io_capture_incomplete": True,
+    }
 
 
 def test_clickhouse_process_restart_resets_rates() -> None:
@@ -274,6 +350,93 @@ def test_snapshot_table_aggregates_and_sorts_thread_samples() -> None:
     assert result["row_count"] == 1
     assert result["rows"][0] == ["20", "2", "B", 30.0, "2"]
     assert result["columns"][3]["quantity"] == "percentage"
+
+
+def test_process_sampler_reuses_one_bounded_thread_selection() -> None:
+    class Adapter:
+        async def detect_runtime_context(self) -> dict[str, str]:
+            return {"server_version": "25.8"}
+
+    class HostRunner:
+        scripts: list[str]
+
+        def __init__(self) -> None:
+            self.scripts = []
+
+        async def run_script(self, script: str, *, timeout: float) -> CommandResult:
+            del timeout
+            self.scripts.append(script)
+            return CommandResult(stdout=PROCESS_SAMPLE, stderr="", returncode=0)
+
+    host_runner = HostRunner()
+    items, _snapshots, _diagnostics = asyncio.run(
+        collect_metric_items(
+            load_content(),
+            Adapter(),
+            SimpleNamespace(scope="node"),
+            [
+                planned_metric(
+                    "snapshot_charts_clickhouse.thread_cpu_top",
+                    "clickhouse.thread_cpu_top",
+                )
+            ],
+            host_runner,
+            {"database_host_ip": "127.0.0.1", "database_port": 9000},
+            duration_seconds=0.002,
+            interval_seconds=0.001,
+        )
+    )
+
+    assert host_runner.scripts[0].startswith("set -- discover 2000\n")
+    assert all(
+        script.startswith("set -- selected 2000 101,102 2\n")
+        for script in host_runner.scripts[1:]
+    )
+    coverage = items[
+        "snapshot_charts_clickhouse.thread_cpu_top"
+    ]["result"]["coverage"]
+    assert coverage["samples"][0]["discovered_thread_count"] == 2
+    assert coverage["samples"][0]["selected_thread_count"] == 2
+    assert coverage["samples"][0]["captured_thread_count"] == 2
+
+
+def test_process_only_sampler_skips_thread_discovery() -> None:
+    class Adapter:
+        async def detect_runtime_context(self) -> dict[str, str]:
+            return {"server_version": "25.8"}
+
+    class HostRunner:
+        scripts: list[str]
+
+        def __init__(self) -> None:
+            self.scripts = []
+
+        async def run_script(self, script: str, *, timeout: float) -> CommandResult:
+            del timeout
+            self.scripts.append(script)
+            return CommandResult(stdout=PROCESS_SAMPLE, stderr="", returncode=0)
+
+    host_runner = HostRunner()
+    asyncio.run(
+        collect_metric_items(
+            load_content(),
+            Adapter(),
+            SimpleNamespace(scope="node"),
+            [
+                planned_metric(
+                    "snapshot_charts_clickhouse.process_memory",
+                    "clickhouse.process_memory",
+                )
+            ],
+            host_runner,
+            {"database_host_ip": "127.0.0.1", "database_port": 9000},
+            duration_seconds=0.002,
+            interval_seconds=0.001,
+        )
+    )
+
+    assert host_runner.scripts
+    assert all(script.startswith("set -- process 1\n") for script in host_runner.scripts)
 
 
 def test_mixed_os_and_process_samplers_do_not_duplicate_process_samples() -> None:

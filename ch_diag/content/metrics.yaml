@@ -11,6 +11,7 @@ sampler_providers:
       iostat_script: samplers/linux_iostat.sh
       process_script: samplers/clickhouse_process.sh
       process_library: lib/clickhouse_process.sh
+      max_process_threads: 2000
     outputs:
       os.cpu:
         collection_scope: every_snapshot
@@ -579,18 +580,22 @@ metrics:
     - name: queries
       value_ref: queries
       transform: rate
+      epoch_refs: [server_start_epoch]
       unit: queries/s
     - name: selects
       value_ref: selects
       transform: rate
+      epoch_refs: [server_start_epoch]
       unit: queries/s
     - name: inserts
       value_ref: inserts
       transform: rate
+      epoch_refs: [server_start_epoch]
       unit: queries/s
     - name: failed
       value_ref: failed_queries
       transform: rate
+      epoch_refs: [server_start_epoch]
       unit: queries/s
     chart:
       kind: stacked_area

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass
+from functools import lru_cache
 import hashlib
 from pathlib import Path
+import re
 from typing import Any, Iterator
 
 import yaml
@@ -22,9 +24,19 @@ REQUIRED_INSTRUCTION_SECTIONS = (
     "## Automatic evaluation",
     "## Checklist",
 )
+VALID_FALLBACK_TRIGGERS = {
+    "query_timeout",
+    "transport_disconnect",
+    "permission_denied",
+    "unsupported_capability",
+    "read_limit",
+    "result_limit",
+    "query_canceled",
+    "shell_timeout",
+}
 
 
-class UniqueKeySafeLoader(yaml.SafeLoader):
+class UniqueKeySafeLoader(getattr(yaml, "CSafeLoader", yaml.SafeLoader)):
     pass
 
 
@@ -156,6 +168,13 @@ def _safe_path(root: Path, relative: str, label: str) -> Path:
 def load_content(content_path: str | Path | None = None) -> ContentPack:
     root = Path(content_path or default_content_path()).resolve()
     checksum = verify_content_integrity(root)
+    return deepcopy(_load_content_revision(root, checksum))
+
+
+@lru_cache(maxsize=8)
+def _load_content_revision(root: Path, checksum: str) -> ContentPack:
+    """Parse one already-admitted content revision and retain an immutable seed."""
+
     report = _load_yaml(root / "report.yaml")
     query_catalog = _load_yaml(root / "queries.yaml")
     script_catalog = _load_yaml(root / "scripts.yaml")
@@ -173,6 +192,7 @@ def load_content(content_path: str | Path | None = None) -> ContentPack:
     instructions: dict[str, str] = {}
     provenance: dict[str, list[str]] = {
         "report": ["report.yaml"],
+        "fallback_items": ["report.yaml"],
         "catalogs/queries": ["queries.yaml"],
         "catalogs/scripts": ["scripts.yaml"],
         "catalogs/metrics": ["metrics.yaml"],
@@ -183,6 +203,16 @@ def load_content(content_path: str | Path | None = None) -> ContentPack:
         if instruction_path.is_file():
             instructions[item_id] = instruction_path.read_text(encoding="utf-8")
             provenance[f"instructions/{item_id}"] = [instruction_path.relative_to(root).as_posix()]
+    for fallback_item_id, item in iter_fallback_items_from_report(report):
+        ref = item.get("instruction")
+        if not ref:
+            continue
+        instruction_path = _safe_path(root, str(ref), f"instruction for {fallback_item_id}")
+        if instruction_path.is_file():
+            instructions[fallback_item_id] = instruction_path.read_text(encoding="utf-8")
+            provenance[f"instructions/{fallback_item_id}"] = [
+                instruction_path.relative_to(root).as_posix()
+            ]
 
     document = {
         "report": deepcopy(_mapping(report.get("report"), "report.yaml:report")),
@@ -191,6 +221,9 @@ def load_content(content_path: str | Path | None = None) -> ContentPack:
         ),
         "defaults": deepcopy(_mapping(report.get("defaults"), "report.yaml:defaults")),
         "sections": deepcopy(_mapping(report.get("sections"), "report.yaml:sections")),
+        "fallback_items": deepcopy(
+            _mapping(report.get("fallback_items"), "report.yaml:fallback_items")
+        ),
         "catalogs": {
             "queries": deepcopy(query_catalog_meta),
             "scripts": deepcopy(_mapping(script_catalog.get("script_catalog"), "script_catalog")),
@@ -270,6 +303,18 @@ def iter_report_items_from_report(
             yield section_id, item_key, f"{section_id}.{item_key}", item
 
 
+def iter_fallback_items_from_report(
+    report: dict[str, Any],
+) -> Iterator[tuple[str, dict[str, Any]]]:
+    for item_id, item in _mapping(
+        report.get("fallback_items"),
+        "report.fallback_items",
+    ).items():
+        if not isinstance(item, dict):
+            raise ContentValidationError(f"fallback item {item_id!r} must be a mapping")
+        yield str(item_id), item
+
+
 def validate_content(content: ContentPack) -> None:
     report_meta = _mapping(content.report.get("report"), "report.yaml:report")
     if report_meta.get("schema_version") != CONTENT_SCHEMA_VERSION:
@@ -278,8 +323,40 @@ def validate_content(content: ContentPack) -> None:
         )
     if not report_meta.get("id") or not report_meta.get("title"):
         raise ContentValidationError("report id and title are required")
+    runtime_policy = _mapping(
+        content.report.get("runtime_policy"),
+        "report.yaml:runtime_policy",
+    )
+    for key in ("max_query_rows_read", "max_query_bytes_read"):
+        value = runtime_policy.get(key)
+        if value is not None and (
+            not isinstance(value, int) or isinstance(value, bool) or value < 1
+        ):
+            raise ContentValidationError(f"runtime_policy.{key} must be a positive integer")
+    reconnect_attempts = runtime_policy.get("database_reconnect_attempts")
+    if reconnect_attempts is not None and (
+        not isinstance(reconnect_attempts, int)
+        or isinstance(reconnect_attempts, bool)
+        or reconnect_attempts < 0
+    ):
+        raise ContentValidationError(
+            "runtime_policy.database_reconnect_attempts must be a non-negative integer"
+        )
+    reconnect_delay = runtime_policy.get("database_reconnect_delay_seconds")
+    if reconnect_delay is not None and (
+        isinstance(reconnect_delay, bool)
+        or not isinstance(reconnect_delay, (int, float))
+        or reconnect_delay < 0
+    ):
+        raise ContentValidationError(
+            "runtime_policy.database_reconnect_delay_seconds must be non-negative"
+        )
+    fail_fast = runtime_policy.get("fail_fast")
+    if fail_fast is not None and not isinstance(fail_fast, bool):
+        raise ContentValidationError("runtime_policy.fail_fast must be boolean")
     allowed_tags = set(report_meta.get("allowed_item_tags") or [])
     seen: set[str] = set()
+    fallback_items = dict(iter_fallback_items_from_report(content.report))
     query_item_consumers: dict[str, list[str]] = {}
     for section_id, _item_key, item_id, item in iter_report_items(content):
         if item_id in seen:
@@ -313,9 +390,85 @@ def validate_content(content: ContentPack) -> None:
         state = item.get("state", "collapsed")
         if state not in {"expanded", "collapsed", "hidden"}:
             raise ContentValidationError(f"{item_id} has invalid state {state!r}")
+        fallback_item_id = item.get("fallback_item")
+        fallback_on = item.get("fallback_on")
+        if fallback_item_id is None:
+            if fallback_on is not None:
+                raise ContentValidationError(f"{item_id} fallback_on requires fallback_item")
+        else:
+            if not isinstance(fallback_item_id, str) or fallback_item_id not in fallback_items:
+                raise ContentValidationError(f"{item_id} references unknown fallback item")
+            if (
+                not isinstance(fallback_on, list)
+                or not fallback_on
+                or len(set(fallback_on)) != len(fallback_on)
+                or any(trigger not in VALID_FALLBACK_TRIGGERS for trigger in fallback_on)
+            ):
+                raise ContentValidationError(
+                    f"{item_id} fallback_on must contain unique normalized failure kinds"
+                )
+            fallback_definition = fallback_items[fallback_item_id]
+            fallback_source_keys = [
+                key for key in ("query", "script") if fallback_definition.get(key)
+            ]
+            if source_kind not in {"query", "script"} or fallback_source_keys != [
+                source_kind
+            ]:
+                raise ContentValidationError(
+                    f"{item_id} fallback must use the same query or script source kind"
+                )
+            allowed_triggers = (
+                VALID_FALLBACK_TRIGGERS - {"shell_timeout"}
+                if source_kind == "query"
+                else {"shell_timeout"}
+            )
+            if any(trigger not in allowed_triggers for trigger in fallback_on):
+                raise ContentValidationError(
+                    f"{item_id} fallback_on contains a trigger unsupported by {source_kind} items"
+                )
+            if source_kind == "query":
+                fallback_source_id = str(fallback_definition["query"])
+                if fallback_source_id in content.queries:
+                    missing_scopes = _query_scopes(content.queries[source_id]) - _query_scopes(
+                        content.queries[fallback_source_id]
+                    )
+                    if missing_scopes:
+                        raise ContentValidationError(
+                            f"{item_id} fallback query misses target scopes: "
+                            f"{sorted(missing_scopes)!r}"
+                        )
         _validate_instruction(item_id, content.instructions.get(item_id))
 
-    extra_instructions = sorted(set(content.instructions) - seen)
+    for fallback_item_id, item in fallback_items.items():
+        if fallback_item_id in seen:
+            raise ContentValidationError(
+                f"fallback item {fallback_item_id!r} collides with a report item"
+            )
+        if not fallback_item_id.startswith("fallback."):
+            raise ContentValidationError(
+                f"fallback item {fallback_item_id!r} must start with 'fallback.'"
+            )
+        source_keys = [key for key in ("query", "script") if item.get(key)]
+        if len(source_keys) != 1:
+            raise ContentValidationError(
+                f"fallback item {fallback_item_id!r} must reference one query or script"
+            )
+        source_kind = source_keys[0]
+        catalog = content.queries if source_kind == "query" else content.scripts
+        if str(item[source_kind]) not in catalog:
+            raise ContentValidationError(
+                f"fallback item {fallback_item_id!r} references missing {source_kind}"
+            )
+        if "fallback_item" in item or "fallback_on" in item:
+            raise ContentValidationError(
+                f"fallback item {fallback_item_id!r} cannot declare another fallback"
+            )
+        _validate_instruction(
+            fallback_item_id,
+            content.instructions.get(fallback_item_id),
+        )
+
+    extra_instructions = sorted(set(content.instructions) - seen - set(fallback_items))
     if extra_instructions:
         raise ContentValidationError(
             f"instructions exist for unknown report items: {extra_instructions!r}"
@@ -358,6 +511,14 @@ def validate_content(content: ContentPack) -> None:
                 raise ContentValidationError(f"query {query_id} SQL file is missing: {sql_path}")
             sql = sql_path.read_text(encoding="utf-8")
             _validate_read_only_sql(sql, query_id)
+            row_limit = (query.get("result_contract") or {}).get("row_limit")
+            if row_limit is not None:
+                final_limit = re.search(r"\blimit\s+(\d+)\s*;?\s*$", sql, re.IGNORECASE)
+                if final_limit is None or int(final_limit.group(1)) != row_limit:
+                    raise ContentValidationError(
+                        f"query {query_id} declares row_limit {row_limit}, but variant "
+                        f"{variant['id']} has no matching final LIMIT"
+                    )
             if "node" in scopes and "{{cluster}}" in sql:
                 raise ContentValidationError(
                     f"query {query_id} node variant contains a cluster placeholder"
@@ -422,6 +583,15 @@ def validate_content(content: ContentPack) -> None:
     }
     for provider_id, provider in content.sampler_providers.items():
         config = _mapping(provider.get("config"), f"sampler {provider_id}.config")
+        max_process_threads = config.get("max_process_threads")
+        if max_process_threads is not None and (
+            not isinstance(max_process_threads, int)
+            or isinstance(max_process_threads, bool)
+            or max_process_threads < 1
+        ):
+            raise ContentValidationError(
+                f"sampler {provider_id}.config.max_process_threads must be a positive integer"
+            )
         for key, value in config.items():
             if str(key).endswith(("_script", "_library")):
                 script_path = _safe_path(content.path / "scripts", str(value), provider_id)
@@ -472,6 +642,19 @@ def validate_content(content: ContentPack) -> None:
                 ):
                     raise ContentValidationError(
                         f"metric {metric_id} ratio_of_deltas series needs denominator_ref"
+                    )
+                epoch_refs = entry.get("epoch_refs")
+                if epoch_refs is not None and (
+                    entry.get("transform", "gauge")
+                    not in {"rate", "delta", "ratio_of_deltas"}
+                    or not isinstance(epoch_refs, list)
+                    or not epoch_refs
+                    or len(set(epoch_refs)) != len(epoch_refs)
+                    or any(not isinstance(ref, str) or not ref for ref in epoch_refs)
+                ):
+                    raise ContentValidationError(
+                        f"metric {metric_id} series epoch_refs require a counter transform "
+                        "and a non-empty unique list of field references"
                     )
         else:
             table = metric.get("table") or {}
@@ -549,6 +732,16 @@ def _validate_source_contract(
         "raw_then_renderer_scaled",
     }:
         raise ContentValidationError(f"source {source_id} has invalid unit policy")
+    row_limit = result_contract.get("row_limit")
+    if row_limit is not None and (
+        result_contract.get("kind") != "table"
+        or not isinstance(row_limit, int)
+        or isinstance(row_limit, bool)
+        or row_limit < 1
+    ):
+        raise ContentValidationError(
+            f"source {source_id} result row_limit must be a positive integer for a table"
+        )
     declared_columns = result_contract.get("columns")
     if declared_columns is not None:
         if result_contract.get("kind") != "table" or not isinstance(declared_columns, dict):
@@ -607,6 +800,14 @@ def _validate_variant_lts(
                 raise ContentValidationError(
                     f"query {query_id} has no {scope} variant for LTS branches: {missing!r}"
                 )
+
+
+def _query_scopes(query: dict[str, Any]) -> set[str]:
+    return {
+        str(scope)
+        for variant in query.get("variants") or []
+        for scope in (variant.get("scopes") or ["node", "cluster"])
+    }
 
 
 def _validate_read_only_sql(sql: str, query_id: str) -> None:

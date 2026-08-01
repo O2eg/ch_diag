@@ -17,5 +17,9 @@ class ClickHouseConnectionError(ChDiagError):
     """ClickHouse connection or safety verification failed."""
 
 
+class ClickHouseIdentityChangedError(ClickHouseConnectionError):
+    """A replacement connection points at a different ClickHouse server."""
+
+
 class UnsupportedClickHouseVersion(ChDiagError):
     """No supported runtime contract exists for the connected server."""

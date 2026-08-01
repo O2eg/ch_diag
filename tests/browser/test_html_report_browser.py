@@ -47,6 +47,7 @@ def browser_artifact() -> dict[str, object]:
                         },
                     }
                 },
+                "fallback_items": {},
                 "queries": {
                     "browser.table": {
                         "title": "Filterable table",
@@ -218,6 +219,15 @@ def test_standalone_report_interactions_and_exports(tmp_path: Path) -> None:
         after_pan = page.evaluate("({...echartsCharts[0].zoomRange})")
         assert after_pan != before_pan
 
+        export_menu = page.locator(".chart-export-menu").first
+        page.evaluate("toggleEChartsExportMenu(echartsCharts[0])")
+        assert export_menu.is_visible()
+        page.locator("body").dispatch_event("pointerdown")
+        assert export_menu.is_hidden()
+        page.evaluate("toggleEChartsExportMenu(echartsCharts[0])")
+        page.keyboard.press("Escape")
+        assert export_menu.is_hidden()
+
         for extension in ("svg", "png", "csv"):
             page.evaluate("toggleEChartsExportMenu(echartsCharts[0])")
             with page.expect_download() as download_info:
@@ -230,6 +240,124 @@ def test_standalone_report_interactions_and_exports(tmp_path: Path) -> None:
 
     assert page_errors == []
     assert console_errors == []
+
+
+def test_chart_initialized_collapsed_resizes_when_revealed(tmp_path: Path) -> None:
+    artifact = browser_artifact()
+    artifact["items"]["browser.chart"]["state"] = "collapsed"
+    report = tmp_path / "collapsed-chart.html"
+    report.write_text(render_html(artifact), encoding="utf-8")
+
+    with playwright.sync_playwright() as context:
+        browser = launch_chromium_or_skip(context)
+        page = browser.new_page()
+        page.goto(report.as_uri(), wait_until="load")
+        chart_item = page.locator('details.item[data-item-id="browser.chart"]')
+        assert chart_item.get_attribute("open") is None
+        page.evaluate(
+            """
+            echartsCharts[0].observedResizeCalls = 0;
+            const originalResize = echartsCharts[0].chart.resize.bind(echartsCharts[0].chart);
+            echartsCharts[0].chart.resize = (...args) => {
+              echartsCharts[0].observedResizeCalls += 1;
+              return originalResize(...args);
+            };
+            """
+        )
+        chart_item.locator(":scope > summary").click()
+        page.wait_for_timeout(400)
+        assert page.evaluate("echartsCharts[0].observedResizeCalls") > 0
+        assert page.evaluate("echartsCharts[0].chart.getWidth()") > 0
+        browser.close()
+
+
+def test_fallback_metadata_is_visible_as_degraded_report_state(tmp_path: Path) -> None:
+    artifact = browser_artifact()
+    artifact["runtime"]["degraded"] = True
+    artifact["runtime"]["collection_summary"] = {"fallback_items": 1}
+    item = artifact["items"]["browser.table"]
+    artifact["content"]["document"]["sections"]["browser"]["items"]["table"].update(
+        {
+            "fallback_item": "fallback.browser.table",
+            "fallback_on": ["query_timeout"],
+        }
+    )
+    artifact["content"]["document"]["fallback_items"] = {
+        "fallback.browser.table": {
+            "title": "Fallback browser table",
+            "query": "browser.fallback",
+            "instruction": "instructions/fallback.browser.table.md",
+        }
+    }
+    artifact["content"]["document"]["queries"]["browser.fallback"] = {
+        "title": "Fallback browser query",
+        "variants": [
+            {
+                "id": "browser_fallback_node",
+                "scopes": ["node"],
+                "sql_file": "node/browser_fallback.sql",
+            }
+        ],
+    }
+    artifact["content"]["document"]["instructions"] = {
+        "fallback.browser.table": "# Fallback inspection\n\nReview fallback rows."
+    }
+    item["source_id"] = "browser.fallback"
+    item["source_metadata"].update(
+        {
+            "variant_id": "browser_fallback_node",
+            "sql_file": "node/browser_fallback.sql",
+            "source_text": "SELECT name, value FROM system.fallback",
+            "instructions": {"text": "# Fallback inspection\n\nReview fallback rows."},
+        }
+    )
+    item["source_metadata"]["fallback"] = {
+        "used": True,
+        "trigger": "query_timeout",
+        "primary_source_id": "browser.primary",
+        "effective_item_id": "fallback.browser.table",
+        "primary_timing_ms": 1000,
+        "fallback_timing_ms": 20,
+        "primary_diagnostics": [{"failure_kind": "query_timeout"}],
+        "primary_instructions": {"text": "Review the primary timeout."},
+    }
+    report = tmp_path / "fallback.html"
+    report.write_text(render_html(artifact), encoding="utf-8")
+
+    with playwright.sync_playwright() as context:
+        browser = launch_chromium_or_skip(context)
+        page = browser.new_page()
+        page.goto(report.as_uri(), wait_until="load")
+        assert "degraded: fallback 1" in page.locator("#statusSummary").inner_text()
+        notice = page.locator(
+            'details.item[data-item-id="browser.table"] .fallback-notice'
+        )
+        assert "query_timeout" in notice.inner_text()
+        assert "fallback.browser.table" in notice.inner_text()
+        raw = page.evaluate(
+            "buildRawItemConfiguration(items['browser.table']).document"
+        )
+        assert raw["resolved"]["source_id"] == "browser.fallback"
+        assert raw["resolved"]["effective_item_id"] == "fallback.browser.table"
+        assert list(raw["queries"]) == ["browser.fallback"]
+        assert list(raw["fallback_items"]) == ["fallback.browser.table"]
+        assert list(raw["instructions"]) == ["fallback.browser.table"]
+        assert raw["queries"]["browser.fallback"]["variants"] == [
+            {
+                "id": "browser_fallback_node",
+                "scopes": ["node"],
+                "sql_file": "node/browser_fallback.sql",
+            }
+        ]
+        fallback_item = page.locator('details.item[data-item-id="browser.table"]')
+        fallback_item.get_by_role("button", name="Show meta").click()
+        page.locator("#metaRawTab").click()
+        raw_text = page.locator("#metaRawCode").inner_text()
+        assert "effective_item_id:" in raw_text
+        assert "fallback.browser.table" in raw_text
+        assert "browser.fallback" in raw_text
+        page.locator("#closeMeta").click()
+        browser.close()
 
 
 def test_chart_keeps_an_all_zero_series(tmp_path: Path) -> None:
@@ -363,7 +491,11 @@ def test_scalar_and_dynamic_unit_metadata_render_without_helper_table_noise(
 
         memory_item = page.locator('details.item[data-item-id="browser.memory"]')
         assert memory_item.locator("thead th").all_inner_texts() == ["Metric", "Value"]
-        assert memory_item.locator("tbody tr").inner_text().splitlines() == [
+        assert [
+            line.strip()
+            for line in memory_item.locator("tbody tr").inner_text().splitlines()
+            if line.strip()
+        ] == [
             "MemTotal",
             "64 GiB",
         ]

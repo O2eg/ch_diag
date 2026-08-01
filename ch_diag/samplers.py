@@ -108,6 +108,18 @@ def parse_clickhouse_process(output: str) -> dict[str, Any]:
         hz = int(sections["__CH_DIAG_PROCESS_HZ__"][0])
         page_size = int(sections["__CH_DIAG_PROCESS_PAGE_SIZE__"][0])
         stat = sections["__CH_DIAG_PROCESS_STAT__"][0]
+        discovered_threads = int(
+            sections["__CH_DIAG_PROCESS_DISCOVERED_THREADS__"][0]
+        )
+        selected_threads = int(
+            sections["__CH_DIAG_PROCESS_SELECTED_THREADS__"][0]
+        )
+        captured_threads = int(
+            sections["__CH_DIAG_PROCESS_CAPTURED_THREADS__"][0]
+        )
+        io_captured_threads = int(
+            sections["__CH_DIAG_PROCESS_IO_CAPTURED_THREADS__"][0]
+        )
     except (KeyError, IndexError, ValueError) as exc:
         raise ValueError("ClickHouse process sampler output is incomplete") from exc
     closing_parenthesis = stat.rfind(")")
@@ -165,6 +177,15 @@ def parse_clickhouse_process(output: str) -> dict[str, Any]:
         "read_bytes": io.get("read_bytes"),
         "write_bytes": io.get("write_bytes"),
         "threads": threads,
+        "thread_coverage": {
+            "discovered_thread_count": discovered_threads,
+            "selected_thread_count": selected_threads,
+            "captured_thread_count": captured_threads,
+            "io_captured_thread_count": io_captured_threads,
+            "selection_truncated": discovered_threads > selected_threads,
+            "capture_incomplete": captured_threads < selected_threads,
+            "io_capture_incomplete": io_captured_threads < captured_threads,
+        },
     }
 
 
@@ -391,10 +412,13 @@ def build_chart_result(metric: dict[str, Any], samples: list[dict[str, Any]]) ->
     partition_by = [str(value) for value in metric.get("partition_by") or []]
     series_specs = list(metric.get("series") or [])
     grouped: dict[tuple[str, tuple[str, ...]], dict[str, Any]] = {}
-    previous: dict[tuple[int, tuple[str, ...]], tuple[float, float]] = {}
+    previous: dict[
+        tuple[int, tuple[str, ...]],
+        tuple[float, float, tuple[Any, ...]],
+    ] = {}
     previous_ratios: dict[
         tuple[int, tuple[str, ...]],
-        tuple[float, float, float],
+        tuple[float, float, float, tuple[Any, ...]],
     ] = {}
     timeline = [str(sample["timestamp"]) for sample in samples]
     active_by_sample: list[set[tuple[str, tuple[str, ...]]]] = [set() for _ in samples]
@@ -412,6 +436,10 @@ def build_chart_result(metric: dict[str, Any], samples: list[dict[str, Any]]) ->
                 transform = str(spec.get("transform") or "gauge")
                 value: float | None = numeric
                 previous_key = (index, dimensions)
+                epoch = tuple(
+                    _nested(row, str(ref))
+                    for ref in spec.get("epoch_refs") or []
+                )
                 if transform == "ratio_of_deltas":
                     denominator = _number(
                         _nested(row, str(spec.get("denominator_ref") or ""))
@@ -419,11 +447,17 @@ def build_chart_result(metric: dict[str, Any], samples: list[dict[str, Any]]) ->
                     if denominator is None:
                         continue
                     old_ratio = previous_ratios.get(previous_key)
-                    previous_ratios[previous_key] = (numeric, denominator, monotonic)
+                    previous_ratios[previous_key] = (
+                        numeric,
+                        denominator,
+                        monotonic,
+                        epoch,
+                    )
                     if (
                         old_ratio is None
                         or numeric < old_ratio[0]
                         or denominator < old_ratio[1]
+                        or epoch != old_ratio[3]
                     ):
                         value = None
                     else:
@@ -437,8 +471,8 @@ def build_chart_result(metric: dict[str, Any], samples: list[dict[str, Any]]) ->
                         )
                 elif transform in {"rate", "delta"}:
                     old = previous.get(previous_key)
-                    previous[previous_key] = (numeric, monotonic)
-                    if old is None or numeric < old[0]:
+                    previous[previous_key] = (numeric, monotonic, epoch)
+                    if old is None or numeric < old[0] or epoch != old[2]:
                         value = None
                     else:
                         delta = numeric - old[0]

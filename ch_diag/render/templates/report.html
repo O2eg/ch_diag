@@ -961,6 +961,23 @@ __ECHARTS_JS__
       color: var(--muted);
     }
 
+    .fallback-notice {
+      display: grid;
+      gap: 6px;
+      margin: 0 0 12px;
+      border: 1px solid var(--warn-fg);
+      border-radius: 8px;
+      background: var(--warn-bg);
+      color: var(--warn-fg);
+      padding: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .fallback-notice p,
+    .fallback-notice pre {
+      margin: 0;
+    }
+
     .item-issues {
       display: grid;
       gap: 8px;
@@ -2151,6 +2168,14 @@ __ECHARTS_JS__
           </svg>
           <span>github.com/O2eg/ch_diag</span>
         </a>
+        <a class="project-link" href="https://o2eg.com/" target="_blank" rel="noopener noreferrer">
+          <svg class="project-link-icon" viewBox="0 0 16 16" aria-hidden="true">
+            <circle cx="8" cy="8" r="5.5"></circle>
+            <path d="M2.5 8h11"></path>
+            <path d="M8 2.5c1.7 1.5 2.6 3.3 2.6 5.5S9.7 12 8 13.5C6.3 12 5.4 10.2 5.4 8S6.3 4 8 2.5Z"></path>
+          </svg>
+          <span>o2eg.com</span>
+        </a>
         <a class="project-link" href="https://t.me/O2egg" target="_blank" rel="noopener noreferrer">
           <svg class="project-link-icon" viewBox="0 0 16 16" aria-hidden="true">
             <path d="M14 2.5 2 7.4l4.3 1.5"></path>
@@ -2292,6 +2317,10 @@ __HIGHLIGHT_JS__
     const tableViews = [];
     const pendingCharts = [];
     const echartsCharts = [];
+    const echartsChartByContainer = new WeakMap();
+    const echartsResizeObserver = typeof window.ResizeObserver === "function"
+      ? new window.ResizeObserver(handleObservedEChartsResize)
+      : null;
     let activeEChartsPanEntry = null;
     const CHART_MIN_HEIGHT_PX = 470;
     const CHART_PLOT_MIN_HEIGHT_PX = 300;
@@ -2358,6 +2387,7 @@ __HIGHLIGHT_JS__
     bindSourceModalControls();
     bindMetaModalControls();
     bindInstructionModalControls();
+    bindChartExportMenuControls();
     bindPageScrollControls();
     applyReportFilters();
 
@@ -2418,6 +2448,13 @@ __HIGHLIGHT_JS__
         badge.className = "badge " + status;
         badge.textContent = status + ": " + counts[status];
         statusSummary.appendChild(badge);
+      }
+      if (runtime.degraded) {
+        const degraded = document.createElement("span");
+        degraded.className = "badge empty";
+        const fallbackCount = ((runtime.collection_summary || {}).fallback_items || 0);
+        degraded.textContent = "degraded: fallback " + fallbackCount;
+        statusSummary.appendChild(degraded);
       }
       renderSeveritySummary();
     }
@@ -3146,6 +3183,10 @@ __HIGHLIGHT_JS__
         body.appendChild(reason);
       }
       body.appendChild(renderItemMetadata(item));
+      const fallbackNotice = renderFallbackNotice(item);
+      if (fallbackNotice) {
+        body.appendChild(fallbackNotice);
+      }
       const issuePanel = renderItemIssues(item);
       if (issuePanel) {
         body.appendChild(issuePanel);
@@ -3226,6 +3267,45 @@ __HIGHLIGHT_JS__
         meta.appendChild(tags);
       }
       return meta;
+    }
+
+    function renderFallbackNotice(item) {
+      const fallback = (((item || {}).source_metadata || {}).fallback || {});
+      if (!fallback.used) {
+        return null;
+      }
+      const panel = document.createElement("div");
+      panel.className = "fallback-notice";
+      panel.setAttribute("role", "status");
+      const title = document.createElement("strong");
+      title.textContent = "Degraded result: fallback source is active";
+      panel.appendChild(title);
+      const source = document.createElement("p");
+      source.textContent = [
+        "trigger=" + String(fallback.trigger || "unknown"),
+        "primary=" + String(fallback.primary_source_id || fallback.parent_item_id || "unknown"),
+        "effective=" + String(fallback.effective_item_id || fallback.fallback_item_id || item.source_id || "unknown"),
+      ].join(" · ");
+      panel.appendChild(source);
+      const timing = document.createElement("p");
+      timing.textContent = [
+        "primary timing=" + String(fallback.primary_timing_ms || 0) + " ms",
+        "fallback timing=" + String(fallback.fallback_timing_ms || 0) + " ms",
+      ].join(" · ");
+      panel.appendChild(timing);
+      const retained = document.createElement("details");
+      const retainedSummary = document.createElement("summary");
+      retainedSummary.textContent = "Primary diagnostics and instructions";
+      retained.appendChild(retainedSummary);
+      const retainedText = document.createElement("pre");
+      const instructions = fallback.primary_instructions;
+      retainedText.textContent = [
+        "diagnostics:\n" + stringifyValue(fallback.primary_diagnostics || []),
+        instructions ? "instructions:\n" + stringifyValue(instructions) : "instructions: unavailable",
+      ].join("\n\n");
+      retained.appendChild(retainedText);
+      panel.appendChild(retained);
+      return panel;
     }
 
     function renderItemTags(item) {
@@ -3542,7 +3622,21 @@ __HIGHLIGHT_JS__
       const section = contentDocument.sections[sectionId];
       const itemDefinition = section.items[itemKey];
       const sourceKind = item.source_kind;
-      const sourceId = itemDefinition[sourceKind];
+      const metadata = item.source_metadata || {};
+      const fallbackMetadata = metadata.fallback || {};
+      const effectiveItemId = fallbackMetadata.used
+        ? String(fallbackMetadata.effective_item_id || fallbackMetadata.fallback_item_id || "")
+        : "";
+      const fallbackDefinition = effectiveItemId
+        ? (contentDocument.fallback_items || {})[effectiveItemId]
+        : null;
+      if (effectiveItemId && !fallbackDefinition) {
+        throw new Error("Missing fallback definition for item " + itemId);
+      }
+      const effectiveItemDefinition = fallbackDefinition || itemDefinition;
+      const sourceId = fallbackDefinition
+        ? effectiveItemDefinition[sourceKind]
+        : (item.source_id || itemDefinition[sourceKind]);
       const sourceRoot = {
         query: "queries",
         script: "scripts",
@@ -3563,7 +3657,13 @@ __HIGHLIGHT_JS__
         document.runtime_policy = runtimePolicy;
         relatedPaths.push("runtime_policy");
       }
-      const defaults = relevantRawDefaults(item, section, itemDefinition, sourceManifest);
+      const defaults = relevantRawDefaults(
+        item,
+        section,
+        itemDefinition,
+        effectiveItemDefinition,
+        sourceManifest
+      );
       if (Object.keys(defaults).length) {
         document.defaults = defaults;
         relatedPaths.push("defaults");
@@ -3577,9 +3677,13 @@ __HIGHLIGHT_JS__
       sectionDefinition.items = {[itemKey]: itemDefinition};
       document.sections = {[sectionId]: sectionDefinition};
       relatedPaths.push("sections/" + sectionId + "/items/" + itemKey);
+      if (fallbackDefinition) {
+        document.fallback_items = {[effectiveItemId]: fallbackDefinition};
+        relatedPaths.push("fallback_items/" + effectiveItemId);
+      }
 
       document[sourceRoot] = {
-        [sourceId]: projectedRawSourceManifest(sourceKind, sourceManifest, item.source_metadata),
+        [sourceId]: projectedRawSourceManifest(sourceKind, sourceManifest, metadata),
       };
       relatedPaths.push(sourceRoot + "/" + sourceId);
 
@@ -3606,14 +3710,17 @@ __HIGHLIGHT_JS__
         }
       }
 
-      const instruction = contentDocument.instructions[itemId];
+      const instructionId = fallbackDefinition ? effectiveItemId : itemId;
+      const instruction = contentDocument.instructions[instructionId];
       if (instruction) {
-        document.instructions = {[itemId]: instruction};
-        relatedPaths.push("instructions/" + itemId);
+        document.instructions = {[instructionId]: instruction};
+        relatedPaths.push("instructions/" + instructionId);
       }
       document.resolved = resolvedRawItemConfiguration(
         item,
         itemDefinition,
+        effectiveItemDefinition,
+        effectiveItemId,
         sourceKind,
         sourceId,
         sourceRoot,
@@ -3657,7 +3764,13 @@ __HIGHLIGHT_JS__
       );
     }
 
-    function relevantRawDefaults(item, section, itemDefinition, sourceManifest) {
+    function relevantRawDefaults(
+      item,
+      section,
+      itemDefinition,
+      effectiveItemDefinition,
+      sourceManifest
+    ) {
       const defaults = contentDocument.defaults;
       const selected = {};
       if ((item.result || {}).kind === "table") {
@@ -3669,7 +3782,7 @@ __HIGHLIGHT_JS__
       }
       const resolvedScope = (item.source_metadata || {}).execution_scope;
       if (
-        itemDefinition.execution_scope === undefined
+        effectiveItemDefinition.execution_scope === undefined
         && sourceManifest.execution_scope === undefined
         && resolvedScope === defaults.item.execution_scope
       ) {
@@ -3739,11 +3852,20 @@ __HIGHLIGHT_JS__
       return provenance;
     }
 
-    function resolvedRawItemConfiguration(item, itemDefinition, sourceKind, sourceId, sourceRoot) {
+    function resolvedRawItemConfiguration(
+      item,
+      itemDefinition,
+      effectiveItemDefinition,
+      effectiveItemId,
+      sourceKind,
+      sourceId,
+      sourceRoot
+    ) {
       const metadata = item.source_metadata;
       const sourceManifest = contentDocument[sourceRoot][sourceId];
       const resolved = {
         item_id: item.item_id,
+        effective_item_id: effectiveItemId || item.item_id,
         title: item.title,
         source_kind: sourceKind,
         source_id: sourceId,
@@ -3751,13 +3873,13 @@ __HIGHLIGHT_JS__
         tags: itemDefinition.tags,
         collection_scope: item.collection_scope,
       };
-      for (const key of ["execution_scope", "variant_id", "sql_file"]) {
+      for (const key of ["execution_scope", "variant_id", "sql_file", "script_file"]) {
         if (metadata[key] !== undefined && metadata[key] !== null) {
           resolved[key] = metadata[key];
         }
       }
-      if (itemDefinition.render !== undefined) {
-        resolved.render = itemDefinition.render;
+      if (effectiveItemDefinition.render !== undefined) {
+        resolved.render = effectiveItemDefinition.render;
       }
       if (sourceManifest.display !== undefined) {
         resolved.display = sourceManifest.display;
@@ -4378,8 +4500,13 @@ __HIGHLIGHT_JS__
           panDrag: null,
           legendPanel: null,
           exportMenu: null,
+          observedResizeRaf: 0,
         };
         echartsCharts.push(entry);
+        echartsChartByContainer.set(pending.container, entry);
+        if (echartsResizeObserver) {
+          echartsResizeObserver.observe(pending.container);
+        }
         chart.on("datazoom", (event) => rememberEChartsZoom(entry, event));
         chart.setOption(buildEChartsOptions(entry), {notMerge: true});
         chart.resize();
@@ -4389,6 +4516,27 @@ __HIGHLIGHT_JS__
         entry.exportMenu = createEChartsExportMenu(entry);
         pending.shell.appendChild(entry.exportMenu);
         pending.container.dataset.chartReady = "true";
+      }
+    }
+
+    function handleObservedEChartsResize(observations) {
+      for (const observation of observations) {
+        const entry = echartsChartByContainer.get(observation.target);
+        if (
+          !entry
+          || observation.contentRect.width <= 0
+          || observation.contentRect.height <= 0
+          || entry.observedResizeRaf
+        ) {
+          continue;
+        }
+        entry.observedResizeRaf = window.requestAnimationFrame(() => {
+          entry.observedResizeRaf = 0;
+          if (entry.container.clientWidth <= 0 || entry.container.clientHeight <= 0) {
+            return;
+          }
+          resizeEChartsLayout(entry);
+        });
       }
     }
 
@@ -4946,12 +5094,16 @@ __HIGHLIGHT_JS__
       return menu;
     }
 
-    function toggleEChartsExportMenu(entry) {
+    function closeEChartsExportMenus(except) {
       for (const candidate of echartsCharts) {
-        if (candidate !== entry && candidate.exportMenu) {
+        if (candidate !== except && candidate.exportMenu) {
           candidate.exportMenu.hidden = true;
         }
       }
+    }
+
+    function toggleEChartsExportMenu(entry) {
+      closeEChartsExportMenus(entry);
       entry.exportMenu.hidden = !entry.exportMenu.hidden;
       if (!entry.exportMenu.hidden) {
         entry.exportMenu.querySelector("button").focus({preventScroll: true});
@@ -6509,6 +6661,20 @@ __HIGHLIGHT_JS__
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape" && !modal.hidden) {
           closeInstructionModal();
+        }
+      });
+    }
+
+    function bindChartExportMenuControls() {
+      document.addEventListener("pointerdown", (event) => {
+        const target = event.target instanceof Element ? event.target : null;
+        if (!target || !target.closest(".chart-export-menu")) {
+          closeEChartsExportMenus();
+        }
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeEChartsExportMenus();
         }
       });
     }
