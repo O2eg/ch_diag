@@ -1,7 +1,7 @@
 # ch_diag machine orchestration contract
 
 The normal CLI is intended for operators. Automation can use the versioned
-`pg_play/component/v1` machine transport without parsing progress lines or
+`ch_play/component/v1` machine transport without parsing progress lines or
 human-readable errors.
 
 Machine options precede the command:
@@ -25,7 +25,7 @@ ch-diag --machine --request-id summary-001 \
   summarize reports/node/report.json
 ```
 
-`--component-capabilities` reports `pg_play/capabilities/v1`, supported commands,
+`--component-capabilities` reports `ch_play/capabilities/v1`, supported commands,
 schema versions, collection modes, target scopes, secret policy and machine
 exit codes. Capability discovery does not connect to ClickHouse.
 

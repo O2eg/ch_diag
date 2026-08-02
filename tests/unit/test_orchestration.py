@@ -79,8 +79,8 @@ def test_machine_hashes_and_summaries_are_deterministic() -> None:
 
 def test_capability_document_exposes_stable_machine_contract() -> None:
     document = capabilities()
-    assert document["capability_schema_version"] == "pg_play/capabilities/v1"
-    assert document["contract_version"] == "pg_play/component/v1"
+    assert document["capability_schema_version"] == "ch_play/capabilities/v1"
+    assert document["contract_version"] == "ch_play/component/v1"
     assert document["component"] == "ch_diag"
     assert document["commands"]["summarize"]["machine_output"] is True
     assert document["artifact_schema_versions"] == [5]
@@ -114,7 +114,7 @@ def test_cli_summarize_validate_and_machine_envelope(
         == EXIT_CODES["success"]
     )
     envelope = json.loads(capsys.readouterr().out)
-    assert envelope["contract_version"] == "pg_play/component/v1"
+    assert envelope["contract_version"] == "ch_play/component/v1"
     assert envelope["component"] == "ch_diag"
     assert envelope["request_id"] == "request-1"
     assert envelope["status"] == "succeeded"

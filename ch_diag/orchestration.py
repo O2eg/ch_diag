@@ -18,8 +18,8 @@ from .runtime_config import (
     TARGET_SCOPES,
 )
 
-CONTRACT_VERSION = "pg_play/component/v1"
-CAPABILITY_SCHEMA_VERSION = "pg_play/capabilities/v1"
+CONTRACT_VERSION = "ch_play/component/v1"
+CAPABILITY_SCHEMA_VERSION = "ch_play/capabilities/v1"
 COMPONENT = "ch_diag"
 MACHINE_INTERFACE = {
     "machine_flag": "--machine",

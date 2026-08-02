@@ -559,7 +559,7 @@ ch-diag --machine --request-id diag-001 explain-plan \
 ch-diag --machine --request-id diag-002 summarize reports/node/report.json
 ```
 
-Machine mode emits exactly one `pg_play/component/v1` JSON envelope on stdout.
+Machine mode emits exactly one `ch_play/component/v1` JSON envelope on stdout.
 Normal progress is retained as command output inside the envelope; warnings are
 redacted and returned separately. See [the machine contract](docs/orchestration.md).
 

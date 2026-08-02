@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ch-diag"
-version = "0.8.2"
+version = "0.8.3"
 description = "ClickHouse diagnostics with host metrics and portable JSON/HTML reports"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -56,7 +56,7 @@ browser = ["playwright>=1.45"]
 ch-diag = "ch_diag.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/O2eg/ch_diag"
+Homepage = "https://o2eg.com/"
 Repository = "https://github.com/O2eg/ch_diag"
 Issues = "https://github.com/O2eg/ch_diag/issues"
 
